@@ -1,0 +1,113 @@
+body {
+    margin: 0;
+    background-color: #f5f1e8;
+    font-family: Arial, sans-serif;
+}
+
+header img {
+    width: 180px;
+}
+
+/* Hero */
+.hero {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.hero h1 {
+    min-width: 400px;
+    font-size: 48px;
+    line-height: 1.1;
+}
+
+.hero-photos {
+    display: flex;
+    align-items: flex-start;
+}
+
+.hero-photos img {
+    width: 180px;
+    height: auto;
+    background-color: #ffffff;
+    padding: 8px 8px 24px;
+    box-shadow: 0 4px 10px #00000033;
+    position: relative;
+}
+
+.hero-photos img + img {
+    margin-left: -30px;
+}
+
+.hero-photos img:nth-child(1) {
+    transform: rotate(-4deg);
+    z-index: 1;
+}
+
+.hero-photos img:nth-child(2) {
+    transform: rotate(3deg);
+    z-index: 4;
+}
+
+.hero-photos img:nth-child(3) {
+    transform: rotate(-2deg);
+    z-index: 3;
+}
+
+.hero-photos img:nth-child(4) {
+    transform: rotate(4deg);
+    z-index: 2;
+}
+
+/* Histórias */
+
+.stories {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.stories h2 {
+    font-size: 32px;
+    text-align: center;
+}
+
+.stories-list {
+    display: flex;
+    justify-content: space-between;
+}
+
+.stories-list article {
+    width: 280px;
+}
+
+.stories-list a {
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    gap: 16px;
+    align-items: center;
+}
+
+.stories-list article img {
+    width: 160px;
+    height: auto;
+}
+
+.story-info {
+    text-align: center;
+}
+
+.story-info h3 {
+    margin: 0 0 6px;
+    font-size: 18px;
+}
+
+.story-info p {
+    margin: 0;
+    font-size: 14px;
+}
+
+
+
