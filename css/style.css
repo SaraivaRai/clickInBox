@@ -9,6 +9,13 @@ body {
     font-family: Arial, sans-serif;
 }
 
+header {
+    width: 100%;
+    background-color: #ffffff;
+    padding: 12px 0;
+   
+}
+
 header img {
     width: 180px;
 }
@@ -19,7 +26,7 @@ header img {
     justify-content: space-between;
     align-items: center;
     max-width: 1200px;
-    margin: 0 auto;
+    margin: 60px auto 0;
 }
 
 .hero h1 {
@@ -41,35 +48,39 @@ header img {
     align-items: flex-start;
 }
 
-.hero-photos img {
-    width: 180px;
-    height: 180px;
+.polaroid {
     background-color: #ffffff;
-    padding: 8px 8px 24px;
+    padding: 10px 10px 30px;
     box-shadow: 0 4px 10px #00000033;
     position: relative;
 }
 
-.hero-photos img + img {
+.polaroid + .polaroid {
     margin-left: -30px;
 }
 
-.hero-photos img:nth-child(1) {
+.polaroid img {
+    width: 180px;
+    height: 180px;
+    display: block;
+}
+
+.polaroid:nth-child(1) {
     transform: rotate(-4deg);
     z-index: 1;
 }
 
-.hero-photos img:nth-child(2) {
+.polaroid:nth-child(2) {
     transform: rotate(3deg);
     z-index: 4;
 }
 
-.hero-photos img:nth-child(3) {
+.polaroid:nth-child(3) {
     transform: rotate(-2deg);
     z-index: 3;
 }
 
-.hero-photos img:nth-child(4) {
+.polaroid:nth-child(4) {
     transform: rotate(4deg);
     z-index: 2;
 }
@@ -131,6 +142,81 @@ header img {
 .story-info p {
     margin: 0;
     font-size: 14px;
+}
+
+@media (max-width: 768px) {
+
+    .hero h1 {
+        min-width: 0;
+        width: 40%;
+    }
+
+    .hero-photos {
+        flex-wrap: wrap;
+        width: 60%;
+        justify-content: center;
+    }
+
+    .stories-list {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 24px;
+    }
+}
+
+@media (max-width: 480px) {
+    .polaroid {
+    padding: 8px 8px 25px;
+}
+
+    .polaroid img {
+        width: 81px;
+        height: 81px;
+    }
+
+   .hero {
+    padding: 0 16px;
+    gap: 12px;
+}
+
+.hero h1 {
+    width: auto;
+    flex: 1;
+    min-width: 150px;
+    font-size: 28px;
+    line-height: 1.05;
+}
+
+.hero-photos {
+    width: auto;
+    flex: 1;
+}
+
+.stories-list article {
+    width: calc((100% - 24px) / 2);
+}
+.stories-list {
+        padding: 0 16px;
+    }
+    .stories-list article img {
+     width: 100%;
+    height: auto;
+    aspect-ratio: 4 / 3;
+    flex-shrink: 0;
+}
+.stories-list a {
+    flex-direction: column;
+    align-items: center;
+}
+
+.story-info {
+    text-align: center;
+}
+
+.story-info h3 {
+    font-size: 14px;
+    line-height: 1.1;
+}
 }
 
 
