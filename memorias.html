@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="css/style.css" />
+    <title>Click In Box</title>
+  </head>
+  <body>
+    <header>
+      <a href="index.html"></a>
+      <img src="assets/logo/logo.png" alt="Click In Box" />
+    </header>
+    <main>
+      <section class="memories">
+        <div class="memories-header">
+          <h1>Memórias</h1>
+          <p>Mariazinha, 15 anos</p>
+        </div>
+
+        <div class="memory-form">
+          <label class="sr-only" for="memory-title"> Título da memória </label>
+          
+          <select id="memory-title" name="memory-title">
+            <option value="" selected disabled>
+              Escolha um tipo de lembrança
+            </option>
+
+            <option value="historia-engracada">Uma história engraçada</option>
+
+            <option value="momento-inesquecivel">
+              Um momento inesquecível
+            </option>
+
+            <option value="aventura">Uma aventura que vivemos</option>
+
+            <option value="duvido">duvido</option>
+
+            <option value="infancia">Uma lembrança da infância</option>
+
+            <option value="nunca-vou-esquecer">
+              Uma coisa que nunca vou esquecer
+            </option>
+
+            <option value="so-a-gente-entende">
+              Um momento que só a gente entende
+            </option>
+
+            <option value="outro">Outro...</option>
+          </select>
+          <input
+            id="memory-custom-title"
+            type="text"
+            placeholder="Dê um nome para essa lembrança"
+          />
+
+          <label class="sr-only" for="memory-text"> Conte essa história </label>
+
+          <textarea
+            id="memory-text"
+            rows="6"
+            placeholder="Conte uma lembrança com Mariazinha..."
+          ></textarea>
+
+          <div class="memory-actions">
+            <label for="memory-file">Adicionar foto</label>
+            <input id="memory-file" type="file" accept="image/*" />
+
+            <button type="button">Compartilhar memória</button>
+          </div>
+        </div>
+
+        <div class="memories-list">
+          <!-- Memória somente com texto -->
+          <article class="memory">
+            <div class="memory-author">
+              <img src="assets/images/stories/story-02.jpeg" alt="Tia Renata" />
+
+              <div>
+                <h3>Tia Renata</h3>
+                <span>Madrinha</span>
+              </div>
+            </div>
+
+            <div class="memory-content">
+              <h2>O bolo que não chegou inteiro</h2>
+
+              <p>
+                Você devia ter uns oito anos quando resolvemos fazer aquele bolo
+                para o aniversário da sua avó.
+              </p>
+
+              <p>
+                Até hoje ninguém sabe explicar como metade da cobertura
+                desapareceu antes de chegarmos à festa. Você jurava que não
+                tinha sido você, mas passou a tarde inteira com chocolate no
+                canto da boca.
+              </p>
+            </div>
+          </article>
+
+          <!-- Memória com texto + foto -->
+          <article class="memory">
+            <div class="memory-author">
+              <img src="assets/images/stories/story-03.jpeg" alt="Lucas" />
+
+              <div>
+                <h3>Lucas</h3>
+                <span>Amigo</span>
+              </div>
+            </div>
+
+            <div class="memory-content">
+              <h2>Aquela viagem para a praia</h2>
+
+              <img
+                class="memory-photo"
+                src="assets/images/stories/story-04.jpeg"
+                alt="Mariazinha durante uma viagem em família"
+              />
+
+              <p>
+                Essa foto sempre me faz lembrar do dia em que a gente decidiu
+                entrar no mar mesmo estando um frio absurdo.
+              </p>
+
+              <p>
+                Duramos cinco minutos e saímos correndo, mas passamos o resto da
+                viagem dizendo que tinha valido a pena.
+              </p>
+            </div>
+          </article>
+        </div>
+      </section>
+    </main>
+    <footer class="footer">
+      <img src="assets/logo/logo.png" alt="Click In Box" />
+    </footer>
+  </body>
+</html>
