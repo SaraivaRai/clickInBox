@@ -10,15 +10,13 @@
     <header>
       <a href="index.html">
         <img src="assets/logo/logo.png" alt="Click In Box" />
-      </a>      
+      </a>
     </header>
     <main>
       <section class="testimonials">
         <div class="testimonials-header">
           <h1>Depoimentos</h1>
-          <a class="box-return" href="box.html">
-        Mariazinha, 15 anos
-    </a>
+          <a class="box-return" href="box.html"> Mariazinha, 15 anos </a>
         </div>
         <div class="testimonial-form">
           <label for="testimonial-text">Deixe seu depoimento</label>
@@ -30,63 +28,16 @@
             placeholder="Escreva uma mensagem para Mariazinha..."
           ></textarea>
 
-          <button type="button">Enviar depoimento</button>
+          <button id="testimonial-submit" type="button">
+            Enviar depoimento
+          </button>
         </div>
-        <article class="testimonial">
-          <div class="testimonial-author">
-            <img src="assets/images/stories/story-02.jpeg" alt="Tia Renata" />
-
-            <div>
-              <h3>Tia Renata</h3>
-              <span>Madrinha</span>
-            </div>
-          </div>
-
-          <div class="testimonial-message">
-            <p>
-              Mariazinha, parece que foi ontem que você era pequenininha e agora
-              já está aqui, fazendo 15 anos.
-            </p>
-
-            <p>
-              Que você continue com esse seu jeito alegre, cercada de pessoas
-              que te querem bem e vivendo um monte de histórias que ainda vamos
-              lembrar juntos.
-            </p>
-
-            <p>
-              Tenho muito orgulho de fazer parte da sua vida. Aproveite muito
-              essa fase — ela passa rápido demais.
-            </p>
-          </div>
-        </article>
-        <article class="testimonial">
-          <div class="testimonial-author">
-            <img src="assets/images/stories/story-03.jpeg" alt="Lucas" />
-
-            <div>
-              <h3>Lucas</h3>
-              <span>Amigo</span>
-            </div>
-          </div>
-
-          <div class="testimonial-message">
-            <p>
-              Mari, espero que seus 15 anos sejam só o começo de uma fase
-              incrível. Obrigado por todas as risadas, pelas histórias e por ser
-              essa pessoa que consegue deixar qualquer encontro mais divertido.
-            </p>
-
-            <p>
-              Feliz aniversário! Ainda temos muita história para aprontar
-              juntos.
-            </p>
-          </div>
-        </article>
+        <div id="testimonials-list"></div>
       </section>
     </main>
     <footer class="footer">
       <img src="assets/logo/logo.png" alt="Click In Box" />
     </footer>
+    <script src="js/app.js"></script>
   </body>
 </html>
