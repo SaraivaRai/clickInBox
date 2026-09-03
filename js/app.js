@@ -1,3 +1,4 @@
+
 const memoryTitle = document.querySelector("#memory-title");
 
 if (memoryTitle) {
@@ -98,9 +99,10 @@ async function carregarDepoimentos() {
 
 carregarDepoimentos();
 
+
+
 const testimonialSubmit = document.querySelector("#testimonial-submit");
 const testimonialText = document.querySelector("#testimonial-text");
-
 if (testimonialSubmit && testimonialText) {
   testimonialSubmit.addEventListener("click", async function () {
     const mensagem = testimonialText.value.trim();

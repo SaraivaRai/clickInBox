@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Entrar | Click In Box</title>
+  </head>
+
+  <body>
+    <main>
+      <h1>Entre para continuar</h1>
+      <div
+        id="g_id_onload"
+        data-client_id="699415164315-cv5d4hbqoirdbnkeo04kdbmk7vi8vuj0.apps.googleusercontent.com"
+        data-callback="handleGoogleCredential"
+      ></div>
+
+      <div class="g_id_signin" data-type="standard"></div>
+    </main>
+    <script>
+      async function handleGoogleCredential(response) {
+        const resposta = await fetch("/api/auth/google", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            credential: response.credential,
+          }),
+        });
+
+        if (resposta.ok) {
+          const parametros = new URLSearchParams(window.location.search);
+          const retorno = parametros.get("retorno");
+
+          window.location.href = retorno || "/";
+        }
+      }
+    </script>
+    <script src="https://accounts.google.com/gsi/client" async></script>
+  </body>
+</html>
