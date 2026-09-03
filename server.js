@@ -123,11 +123,12 @@ async function autenticarPagina(req, res, next) {
 app.get("/", function (req, res) {
   res.sendFile(__dirname + "/index.html");
 });
-app.get("/box.html", function (req, res) {
-  res.sendFile(__dirname + "/box.html");
-});
+
 app.get("/login.html", function (req, res) {
   res.sendFile(__dirname + "/login.html");
+});
+app.get("/boxes/:boxId", function (req, res) {
+  res.sendFile(__dirname + "/box.html");
 });
 
 app.get(

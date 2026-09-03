@@ -1,4 +1,3 @@
-
 const memoryTitle = document.querySelector("#memory-title");
 
 if (memoryTitle) {
@@ -15,6 +14,37 @@ if (memoryTitle) {
   });
 }
 
+const partesUrl = window.location.pathname.split("/");
+const boxId = partesUrl[1] === "boxes" ? partesUrl[2] : null;
+
+const linkAlbum = document.querySelector("#link-album");
+const linkDepoimentos = document.querySelector("#link-depoimentos");
+const linkPessoas = document.querySelector("#link-pessoas");
+const linkMemorias = document.querySelector("#link-memorias");
+const boxReturn = document.querySelector("#box-return");
+
+if (boxId) {
+  if (linkAlbum) linkAlbum.href = `/boxes/${boxId}/album`;
+  if (linkDepoimentos) linkDepoimentos.href = `/boxes/${boxId}/depoimentos`;
+  if (linkPessoas) linkPessoas.href = `/boxes/${boxId}/pessoas`;
+  if (linkMemorias) linkMemorias.href = `/boxes/${boxId}/memorias`;
+  if (boxReturn) boxReturn.href = `/boxes/${boxId}`;
+}
+
+async function carregarBox() {
+  if (!boxId) return;
+
+  const resposta = await fetch(`/api/boxes/${boxId}`);
+  const box = await resposta.json();
+  const boxNome = document.querySelector("#box-nome");
+  const boxEvento = document.querySelector("#box-evento");
+
+  if (boxNome) boxNome.textContent = box.nome;
+  if (boxEvento) boxEvento.textContent = box.evento;
+}
+
+carregarBox();
+
 async function carregarFotos() {
   const albumGrid = document.querySelector(".album-grid");
 
@@ -24,7 +54,7 @@ async function carregarFotos() {
 
   albumGrid.innerHTML = "";
 
-  const resposta = await fetch("/api/boxes/1/fotos");
+  const resposta = await fetch(`/api/boxes/${boxId}/fotos`);
   const fotos = await resposta.json();
 
   fotos.forEach(function (foto) {
@@ -52,7 +82,7 @@ if (albumPhoto) {
     const dados = new FormData();
     dados.append("foto", arquivo);
 
-    const resposta = await fetch("/api/boxes/1/fotos", {
+    const resposta = await fetch(`/api/boxes/${boxId}/fotos`, {
       method: "POST",
       body: dados,
     });
@@ -73,7 +103,7 @@ async function carregarDepoimentos() {
 
   testimonialsList.innerHTML = "";
 
-  const resposta = await fetch("/api/boxes/1/depoimentos");
+  const resposta = await fetch(`/api/boxes/${boxId}/depoimentos`);
   const depoimentos = await resposta.json();
 
   depoimentos.forEach(function (depoimento) {
@@ -99,8 +129,6 @@ async function carregarDepoimentos() {
 
 carregarDepoimentos();
 
-
-
 const testimonialSubmit = document.querySelector("#testimonial-submit");
 const testimonialText = document.querySelector("#testimonial-text");
 if (testimonialSubmit && testimonialText) {
@@ -111,7 +139,7 @@ if (testimonialSubmit && testimonialText) {
       return;
     }
 
-    const resposta = await fetch("/api/boxes/1/depoimentos", {
+    const resposta = await fetch(`/api/boxes/${boxId}/depoimentos`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -137,7 +165,7 @@ async function carregarMemorias() {
 
   memoriesList.innerHTML = "";
 
-  const resposta = await fetch("/api/boxes/1/memorias");
+  const resposta = await fetch(`/api/boxes/${boxId}/memorias`);
   const memorias = await resposta.json();
 
   memorias.forEach(function (memoria) {
@@ -221,7 +249,7 @@ if (memorySubmit && memoryTitle && memoryText) {
       dados.append("foto", arquivo);
     }
 
-    const resposta = await fetch("/api/boxes/1/memorias", {
+    const resposta = await fetch(`/api/boxes/${boxId}/memorias`, {
       method: "POST",
       body: dados,
     });
@@ -248,7 +276,7 @@ async function carregarPessoas() {
 
   peopleList.innerHTML = "";
 
-  const resposta = await fetch("/api/boxes/1/usuarios");
+  const resposta = await fetch(`/api/boxes/${boxId}/usuarios`);
   const pessoas = await resposta.json();
 
   pessoas.forEach(function (pessoa) {
@@ -269,3 +297,48 @@ async function carregarPessoas() {
 }
 
 carregarPessoas();
+
+async function carregarParticipantes() {
+  if (!boxId) return;
+
+  const lista = document.querySelector("#box-participants");
+  if (!lista) return;
+
+  const resposta = await fetch(`/api/boxes/${boxId}/usuarios`);
+  const usuarios = await resposta.json();
+  const protagonista = usuarios.find(
+    (usuario) => usuario.papel === "protagonista",
+  );
+
+  const demais = usuarios
+    .filter((usuario) => usuario.papel !== "protagonista")
+    .sort(() => Math.random() - 0.5);
+
+  const participantes = protagonista
+    ? [protagonista, ...demais.slice(0, 5)]
+    : demais.slice(0, 6);
+
+  lista.innerHTML = "";
+
+  participantes.forEach((usuario) => {
+    const participante = document.createElement("div");
+    participante.className = "participant";
+
+    const info = document.createElement("div");
+    info.className = "participant-info";
+
+    const nome = document.createElement("h3");
+    nome.textContent = usuario.nome;
+
+    const papel = document.createElement("span");
+    papel.textContent = usuario.papel;
+
+    info.appendChild(nome);
+    info.appendChild(papel);
+
+    participante.appendChild(info);
+    lista.appendChild(participante);
+  });
+}
+
+carregarParticipantes();
