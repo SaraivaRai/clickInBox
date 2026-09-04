@@ -7,6 +7,8 @@ const express = require("express");
 const { Pool } = require("pg");
 const multer = require("multer");
 const fs = require("fs");
+const DIAS_ANTES_ESCRITA_CONVIDADO = 1;
+const DIAS_DEPOIS_ESCRITA = 5;
 
 const upload = multer({
   dest: "uploads/",
@@ -33,6 +35,10 @@ const pool = new Pool({
   password: process.env.DB_PASSWORD,
 });
 
+function gerarTokenConvite() {
+  return crypto.randomBytes(32).toString("hex");
+}
+
 app.use(express.json());
 app.use("/css", express.static(__dirname + "/css"));
 app.use("/js", express.static(__dirname + "/js"));
@@ -55,6 +61,49 @@ function obterCookie(req, nome) {
   }
 
   return decodeURIComponent(cookieEncontrado.substring(nome.length + 1));
+}
+
+async function criarConvite(boxId, papel, limiteUsos) {
+  const token = gerarTokenConvite();
+
+  const resultado = await pool.query(
+    `
+      INSERT INTO convites (box_id, papel, token, limite_usos)
+      VALUES ($1, $2, $3, $4)
+      RETURNING id, box_id, papel, token, limite_usos, usos, ativo
+    `,
+    [boxId, papel, token, limiteUsos],
+  );
+
+  return resultado.rows[0];
+}
+
+function podeEscreverNaBox(papel, dataEvento) {
+  const agora = new Date();
+  const evento = new Date(dataEvento);
+
+  const fimEscrita = new Date(evento);
+  fimEscrita.setDate(fimEscrita.getDate() + DIAS_DEPOIS_ESCRITA);
+  fimEscrita.setHours(23, 59, 59, 999);
+
+  if (agora > fimEscrita) {
+    return false;
+  }
+  if (papel === "convidado") {
+    const inicioEscrita = new Date(evento);
+
+    inicioEscrita.setDate(
+      inicioEscrita.getDate() - DIAS_ANTES_ESCRITA_CONVIDADO,
+    );
+
+    inicioEscrita.setHours(0, 0, 0, 0);
+
+    if (agora < inicioEscrita) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 async function autenticarUsuario(req, res, next) {
@@ -123,7 +172,9 @@ async function autenticarPagina(req, res, next) {
 app.get("/", function (req, res) {
   res.sendFile(__dirname + "/index.html");
 });
-
+app.get("/perfil", autenticarPagina, function (req, res) {
+  res.sendFile(__dirname + "/perfil.html");
+});
 app.get("/login.html", function (req, res) {
   res.sendFile(__dirname + "/login.html");
 });
@@ -142,12 +193,12 @@ app.get(
 
 app.get(
   "/boxes/:boxId/depoimentos",
- autenticarPagina,
+  autenticarPagina,
   autorizarBox,
   function (req, res) {
     res.sendFile(__dirname + "/depoimentos.html");
   },
-);  
+);
 async function autorizarBox(req, res, next) {
   const boxId = req.params.boxId;
 
@@ -217,33 +268,34 @@ app.get(
   async function (req, res) {
     const boxId = req.params.boxId;
 
-  try {
-    const boxExiste = await pool.query("SELECT id FROM boxes WHERE id = $1", [
-      boxId,
-    ]);
+    try {
+      const boxExiste = await pool.query("SELECT id FROM boxes WHERE id = $1", [
+        boxId,
+      ]);
 
-    if (boxExiste.rows.length === 0) {
-      return res.status(404).json({
-        erro: "Box não encontrada",
+      if (boxExiste.rows.length === 0) {
+        return res.status(404).json({
+          erro: "Box não encontrada",
+        });
+      }
+      const resultado = await pool.query(
+        "SELECT usuarios.id, usuarios.nome, usuarios.foto_perfil, usuarios_boxes.papel FROM usuarios " +
+          "JOIN usuarios_boxes ON usuarios.id = usuarios_boxes.usuario_id " +
+          "JOIN boxes ON boxes.id = usuarios_boxes.box_id " +
+          "WHERE boxes.id = $1",
+        [boxId],
+      );
+
+      res.json(resultado.rows);
+    } catch (erro) {
+      console.error(erro);
+
+      res.status(500).json({
+        erro: "Erro interno do servidor",
       });
     }
-    const resultado = await pool.query(
-      "SELECT usuarios.id, usuarios.nome, usuarios_boxes.papel FROM usuarios " +
-        "JOIN usuarios_boxes ON usuarios.id = usuarios_boxes.usuario_id " +
-        "JOIN boxes ON boxes.id = usuarios_boxes.box_id " +
-        "WHERE boxes.id = $1",
-      [boxId],
-    );
-
-    res.json(resultado.rows);
-  } catch (erro) {
-    console.error(erro);
-
-    res.status(500).json({
-      erro: "Erro interno do servidor",
-    });
-  }
-});
+  },
+);
 
 app.get(
   "/api/boxes/:boxId/depoimentos",
@@ -252,25 +304,26 @@ app.get(
   async function (req, res) {
     const boxId = req.params.boxId;
 
-  try {
-    const resultado = await pool.query(
-      "SELECT depoimentos.id, usuarios.nome, usuarios_boxes.papel, depoimentos.mensagem " +
-        "FROM depoimentos " +
-        "JOIN usuarios ON usuarios.id = depoimentos.usuario_id " +
-        "JOIN usuarios_boxes ON usuarios_boxes.usuario_id = usuarios.id " +
-        "AND usuarios_boxes.box_id = depoimentos.box_id " +
-        "WHERE depoimentos.box_id = $1",
-      [boxId],
-    );
-    res.json(resultado.rows);
-  } catch (erro) {
-    console.error(erro);
+    try {
+      const resultado = await pool.query(
+        "SELECT depoimentos.id, usuarios.nome, usuarios_boxes.papel, depoimentos.mensagem " +
+          "FROM depoimentos " +
+          "JOIN usuarios ON usuarios.id = depoimentos.usuario_id " +
+          "JOIN usuarios_boxes ON usuarios_boxes.usuario_id = usuarios.id " +
+          "AND usuarios_boxes.box_id = depoimentos.box_id " +
+          "WHERE depoimentos.box_id = $1",
+        [boxId],
+      );
+      res.json(resultado.rows);
+    } catch (erro) {
+      console.error(erro);
 
-    res.status(500).json({
-      erro: "Erro interno do servidor",
-    });
-  }
-});
+      res.status(500).json({
+        erro: "Erro interno do servidor",
+      });
+    }
+  },
+);
 
 app.get(
   "/api/boxes/:boxId/memorias",
@@ -279,31 +332,29 @@ app.get(
   async function (req, res) {
     const boxId = req.params.boxId;
 
-  try {
-    const resultado = await pool.query(
-      "SELECT memorias.id, usuarios.nome, usuarios_boxes.papel, " +
-        "memorias.titulo, memorias.texto, memorias.foto " +
-        "FROM memorias " +
-        "JOIN usuarios ON usuarios.id = memorias.usuario_id " +
-        "JOIN usuarios_boxes ON usuarios_boxes.usuario_id = usuarios.id " +
-        "AND usuarios_boxes.box_id = memorias.box_id " +
-        "WHERE memorias.box_id = $1",
-      [boxId],
-    );
+    try {
+      const resultado = await pool.query(
+        "SELECT memorias.id, usuarios.nome, usuarios_boxes.papel, " +
+          "memorias.titulo, memorias.texto, memorias.foto " +
+          "FROM memorias " +
+          "JOIN usuarios ON usuarios.id = memorias.usuario_id " +
+          "JOIN usuarios_boxes ON usuarios_boxes.usuario_id = usuarios.id " +
+          "AND usuarios_boxes.box_id = memorias.box_id " +
+          "WHERE memorias.box_id = $1",
+        [boxId],
+      );
 
-    res.json(resultado.rows);
-  } catch (erro) {
-    console.error(erro);
+      res.json(resultado.rows);
+    } catch (erro) {
+      console.error(erro);
 
-    res.status(500).json({
-      erro: "Erro interno do servidor",
-    });
-  }
-});
-app.get(
-  "/api/memorias/:id/foto",
-  autenticarUsuario,
-  async function (req, res) {
+      res.status(500).json({
+        erro: "Erro interno do servidor",
+      });
+    }
+  },
+);
+app.get("/api/memorias/:id/foto", autenticarUsuario, async function (req, res) {
   const memoriaId = req.params.id;
 
   try {
@@ -356,31 +407,29 @@ app.get(
   async function (req, res) {
     const boxId = req.params.boxId;
 
-  try {
-    const resultado = await pool.query(
-      "SELECT fotos.id, usuarios.nome, usuarios_boxes.papel, fotos.arquivo " +
-        "FROM fotos " +
-        "JOIN usuarios ON usuarios.id = fotos.usuario_id " +
-        "JOIN usuarios_boxes ON usuarios_boxes.usuario_id = usuarios.id " +
-        "AND usuarios_boxes.box_id = fotos.box_id " +
-        "WHERE fotos.box_id = $1",
-      [boxId],
-    );
+    try {
+      const resultado = await pool.query(
+        "SELECT fotos.id, usuarios.nome, usuarios_boxes.papel, fotos.arquivo " +
+          "FROM fotos " +
+          "JOIN usuarios ON usuarios.id = fotos.usuario_id " +
+          "JOIN usuarios_boxes ON usuarios_boxes.usuario_id = usuarios.id " +
+          "AND usuarios_boxes.box_id = fotos.box_id " +
+          "WHERE fotos.box_id = $1",
+        [boxId],
+      );
 
-    res.json(resultado.rows);
-  } catch (erro) {
-    console.error(erro);
+      res.json(resultado.rows);
+    } catch (erro) {
+      console.error(erro);
 
-    res.status(500).json({
-      erro: "Erro interno do servidor",
-    });
-  }
-});
+      res.status(500).json({
+        erro: "Erro interno do servidor",
+      });
+    }
+  },
+);
 
-app.get(
-  "/api/fotos/:id/arquivo",
-  autenticarUsuario,
-  async function (req, res) {
+app.get("/api/fotos/:id/arquivo", autenticarUsuario, async function (req, res) {
   const fotoId = req.params.id;
 
   try {
@@ -434,13 +483,28 @@ app.post(
         });
       }
       const vinculo = await pool.query(
-        "SELECT 1 FROM usuarios_boxes WHERE usuario_id = $1 AND box_id = $2",
+        `
+    SELECT
+      usuarios_boxes.papel,
+      boxes.data_evento
+    FROM usuarios_boxes
+    JOIN boxes ON boxes.id = usuarios_boxes.box_id
+    WHERE usuarios_boxes.usuario_id = $1
+      AND usuarios_boxes.box_id = $2
+  `,
         [req.usuario.id, boxId],
       );
 
       if (vinculo.rows.length === 0) {
         return res.status(403).json({
           erro: "Usuário não pertence a esta Box",
+        });
+      }
+      const { papel, data_evento } = vinculo.rows[0];
+
+      if (!podeEscreverNaBox(papel, data_evento)) {
+        return res.status(403).json({
+          erro: "A escrita não está disponível neste momento",
         });
       }
       const resultado = await pool.query(
@@ -463,39 +527,166 @@ app.post(
   "/api/boxes/:boxId/memorias",
   autenticarUsuario,
   autorizarBox,
-  function (req, res) {
-  upload.single("foto")(req, res, async function (erroUpload) {
-    if (erroUpload) {
-      if (erroUpload.code === "LIMIT_FILE_SIZE") {
-        return res.status(400).json({
-          erro: "A imagem deve ter no máximo 10 MB",
+  async function (req, res) {
+    const boxId = req.params.boxId;
+
+    try {
+      const vinculo = await pool.query(
+        `
+        SELECT
+          usuarios_boxes.papel,
+          boxes.data_evento
+        FROM usuarios_boxes
+        JOIN boxes ON boxes.id = usuarios_boxes.box_id
+        WHERE usuarios_boxes.usuario_id = $1
+          AND usuarios_boxes.box_id = $2
+      `,
+        [req.usuario.id, boxId],
+      );
+
+      const { papel, data_evento } = vinculo.rows[0];
+
+      if (!podeEscreverNaBox(papel, data_evento)) {
+        return res.status(403).json({
+          erro: "A escrita não está disponível neste momento",
         });
       }
+    } catch (erro) {
+      console.error(erro);
 
-      return res.status(400).json({
-        erro: erroUpload.message,
+      return res.status(500).json({
+        erro: "Erro interno do servidor",
       });
     }
 
-    const boxId = req.params.boxId;
-    const titulo = req.body.titulo;
-    const texto = req.body.texto;
-    const arquivo = req.file;
-
-    try {
-      if (!titulo || titulo.trim() === "" || !texto || texto.trim() === "") {
-        if (arquivo && fs.existsSync(arquivo.path)) {
-          fs.unlinkSync(arquivo.path);
+    upload.single("foto")(req, res, async function (erroUpload) {
+      if (erroUpload) {
+        if (erroUpload.code === "LIMIT_FILE_SIZE") {
+          return res.status(400).json({
+            erro: "A imagem deve ter no máximo 10 MB",
+          });
         }
 
         return res.status(400).json({
-          erro: "Título e texto são obrigatórios",
+          erro: erroUpload.message,
         });
       }
-     
-      let caminhoFoto = null;
 
-      if (arquivo) {
+      const titulo = req.body.titulo;
+      const texto = req.body.texto;
+      const arquivo = req.file;
+
+      try {
+        if (!titulo || titulo.trim() === "" || !texto || texto.trim() === "") {
+          if (arquivo && fs.existsSync(arquivo.path)) {
+            fs.unlinkSync(arquivo.path);
+          }
+
+          return res.status(400).json({
+            erro: "Título e texto são obrigatórios",
+          });
+        }
+
+        let caminhoFoto = null;
+
+        if (arquivo) {
+          const { fileTypeFromFile } = await import("file-type");
+          const tipoReal = await fileTypeFromFile(arquivo.path);
+
+          if (!tipoReal || !tipoReal.mime.startsWith("image/")) {
+            fs.unlinkSync(arquivo.path);
+
+            return res.status(400).json({
+              erro: "O arquivo enviado não é uma imagem válida",
+            });
+          }
+
+          const novoCaminho = arquivo.path + "." + tipoReal.ext;
+
+          fs.renameSync(arquivo.path, novoCaminho);
+          arquivo.path = novoCaminho;
+          caminhoFoto = novoCaminho;
+        }
+
+        const resultado = await pool.query(
+          "INSERT INTO memorias (box_id, usuario_id, titulo, texto, foto) " +
+            "VALUES ($1, $2, $3, $4, $5) RETURNING *",
+          [boxId, req.usuario.id, titulo, texto, caminhoFoto],
+        );
+
+        res.status(201).json(resultado.rows[0]);
+      } catch (erro) {
+        console.error(erro);
+
+        if (arquivo && arquivo.path && fs.existsSync(arquivo.path)) {
+          fs.unlinkSync(arquivo.path);
+        }
+
+        res.status(500).json({
+          erro: "Erro interno do servidor",
+        });
+      }
+    });
+  },
+);
+app.post(
+  "/api/boxes/:boxId/fotos",
+  autenticarUsuario,
+  autorizarBox,
+  async function (req, res) {
+    const boxId = req.params.boxId;
+
+    try {
+      const vinculo = await pool.query(
+        `
+        SELECT
+          usuarios_boxes.papel,
+          boxes.data_evento
+        FROM usuarios_boxes
+        JOIN boxes ON boxes.id = usuarios_boxes.box_id
+        WHERE usuarios_boxes.usuario_id = $1
+          AND usuarios_boxes.box_id = $2
+      `,
+        [req.usuario.id, boxId],
+      );
+
+      const { papel, data_evento } = vinculo.rows[0];
+
+      if (!podeEscreverNaBox(papel, data_evento)) {
+        return res.status(403).json({
+          erro: "A escrita não está disponível neste momento",
+        });
+      }
+    } catch (erro) {
+      console.error(erro);
+
+      return res.status(500).json({
+        erro: "Erro interno do servidor",
+      });
+    }
+
+    upload.single("foto")(req, res, async function (erroUpload) {
+      if (erroUpload) {
+        if (erroUpload.code === "LIMIT_FILE_SIZE") {
+          return res.status(400).json({
+            erro: "A imagem deve ter no máximo 10 MB",
+          });
+        }
+
+        return res.status(400).json({
+          erro: erroUpload.message,
+        });
+      }
+
+      const arquivo = req.file;
+
+      try {
+        if (!arquivo) {
+          return res.status(400).json({
+            erro: "Foto é obrigatória",
+          });
+        }
+
         const { fileTypeFromFile } = await import("file-type");
         const tipoReal = await fileTypeFromFile(arquivo.path);
 
@@ -511,92 +702,28 @@ app.post(
 
         fs.renameSync(arquivo.path, novoCaminho);
         arquivo.path = novoCaminho;
-        caminhoFoto = novoCaminho;
-      }
 
-      const resultado = await pool.query(
-        "INSERT INTO memorias (box_id, usuario_id, titulo, texto, foto) " +
-          "VALUES ($1, $2, $3, $4, $5) RETURNING *",
-        [boxId, req.usuario.id, titulo, texto, caminhoFoto],
-      );
+        const resultado = await pool.query(
+          "INSERT INTO fotos (box_id, usuario_id, arquivo) " +
+            "VALUES ($1, $2, $3) RETURNING *",
+          [boxId, req.usuario.id, arquivo.path],
+        );
 
-      res.status(201).json(resultado.rows[0]);
-    } catch (erro) {
-      console.error(erro);
+        res.status(201).json(resultado.rows[0]);
+      } catch (erro) {
+        console.error(erro);
 
-      if (arquivo && arquivo.path && fs.existsSync(arquivo.path)) {
-        fs.unlinkSync(arquivo.path);
-      }
+        if (arquivo && arquivo.path && fs.existsSync(arquivo.path)) {
+          fs.unlinkSync(arquivo.path);
+        }
 
-      res.status(500).json({
-        erro: "Erro interno do servidor",
-      });
-    }
-  });
-});
-app.post(
-  "/api/boxes/:boxId/fotos",
-  autenticarUsuario,
-  autorizarBox,
-  function (req, res) {
-  upload.single("foto")(req, res, async function (erroUpload) {
-    if (erroUpload) {
-      if (erroUpload.code === "LIMIT_FILE_SIZE") {
-        return res.status(400).json({
-          erro: "A imagem deve ter no máximo 10 MB",
+        res.status(500).json({
+          erro: "Erro interno do servidor",
         });
       }
-
-      return res.status(400).json({
-        erro: erroUpload.message,
-      });
-    }
-
-    const boxId = req.params.boxId;
-    const arquivo = req.file;
-
-    try {
-      if (!arquivo) {
-        return res.status(400).json({
-          erro: "Foto é obrigatória",
-        });
-      }
-      const { fileTypeFromFile } = await import("file-type");
-      const tipoReal = await fileTypeFromFile(arquivo.path);
-
-      if (!tipoReal || !tipoReal.mime.startsWith("image/")) {
-        fs.unlinkSync(arquivo.path);
-
-        return res.status(400).json({
-          erro: "O arquivo enviado não é uma imagem válida",
-        });
-      }
-
-      const novoCaminho = arquivo.path + "." + tipoReal.ext;
-
-      fs.renameSync(arquivo.path, novoCaminho);
-      arquivo.path = novoCaminho;
-     
-      const resultado = await pool.query(
-        "INSERT INTO fotos (box_id, usuario_id, arquivo) " +
-          "VALUES ($1, $2, $3) RETURNING *",
-        [boxId, req.usuario.id, arquivo.path],
-      );
-
-      res.status(201).json(resultado.rows[0]);
-    } catch (erro) {
-      console.error(erro);
-
-      if (arquivo && arquivo.path && fs.existsSync(arquivo.path)) {
-        fs.unlinkSync(arquivo.path);
-      }
-
-      res.status(500).json({
-        erro: "Erro interno do servidor",
-      });
-    }
-  });
-});
+    });
+  },
+);
 
 app.post("/api/auth/google", async function (req, res) {
   try {
@@ -614,8 +741,8 @@ app.post("/api/auth/google", async function (req, res) {
     const payload = ticket.getPayload();
     const usuarioExistente = await pool.query(
       `SELECT id, nome, email
-   FROM usuarios
-   WHERE oauth_provider = $1 AND oauth_id = $2`,
+        FROM usuarios
+        WHERE oauth_provider = $1 AND oauth_id = $2`,
       ["google", payload.sub],
     );
 
@@ -623,15 +750,30 @@ app.post("/api/auth/google", async function (req, res) {
 
     if (usuarioExistente.rows.length === 0) {
       const novoUsuario = await pool.query(
-        `INSERT INTO usuarios (nome, email, oauth_provider, oauth_id)
-            VALUES ($1, $2, $3, $4)
-     RETURNING id, nome, email`,
-        [payload.name, payload.email, "google", payload.sub],
+        `INSERT INTO usuarios (nome, email, oauth_provider, oauth_id, foto_perfil)
+        VALUES ($1, $2, $3, $4, $5)
+        RETURNING id, nome, email, foto_perfil`,
+        [payload.name, payload.email, "google", payload.sub, payload.picture],
       );
 
       usuario = novoUsuario.rows[0];
     } else {
-      usuario = usuarioExistente.rows[0];
+      const usuarioAtualizado = await pool.query(
+        `UPDATE usuarios
+     SET nome = $1,
+         email = $2,
+         foto_perfil = $3
+     WHERE id = $4
+     RETURNING id, nome, email, foto_perfil`,
+        [
+          payload.name,
+          payload.email,
+          payload.picture,
+          usuarioExistente.rows[0].id,
+        ],
+      );
+
+      usuario = usuarioAtualizado.rows[0];
     }
     console.log(usuarioExistente.rows);
     console.log("Usuário Click In Box:", usuario);
@@ -667,10 +809,152 @@ app.post("/api/auth/google", async function (req, res) {
   }
 });
 
-app.get("/api/auth/me", autenticarUsuario, function (req, res) {
+app.get("/api/auth/me", autenticarUsuario, async function (req, res) {
+  const resultado = await pool.query(
+    `
+      SELECT id, nome, email, foto_perfil
+      FROM usuarios
+      WHERE id = $1
+    `,
+    [req.usuario.id],
+  );
+
   res.json({
-    usuario: req.usuario,
+    usuario: resultado.rows[0],
   });
+});
+
+app.get("/api/minhas-boxes", autenticarUsuario, async function (req, res) {
+  const resultado = await pool.query(
+    `
+      SELECT
+        boxes.id,
+        boxes.nome,
+        boxes.evento,
+        usuarios_boxes.papel
+      FROM usuarios_boxes
+      JOIN boxes ON boxes.id = usuarios_boxes.box_id
+      WHERE usuarios_boxes.usuario_id = $1
+      ORDER BY boxes.id
+    `,
+    [req.usuario.id],
+  );
+
+  res.json(resultado.rows);
+});
+
+app.get("/convite/:token", autenticarPagina, async function (req, res) {
+  const token = req.params.token;
+
+  try {
+    const resultado = await pool.query(
+      `
+        SELECT
+          convites.id,
+          convites.box_id,
+          convites.papel,
+          convites.limite_usos,
+          convites.usos,
+          convites.ativo,
+          boxes.nome,
+          boxes.data_evento
+        FROM convites
+        JOIN boxes ON boxes.id = convites.box_id
+        WHERE convites.token = $1
+      `,
+      [token],
+    );
+
+    if (resultado.rows.length === 0) {
+      return res.status(404).send("Convite inválido.");
+    }
+
+    const convite = resultado.rows[0];
+
+    const vinculoExistente = await pool.query(
+      `
+        SELECT usuario_id, box_id, papel
+        FROM usuarios_boxes
+        WHERE usuario_id = $1 AND box_id = $2
+      `,
+      [req.usuario.id, convite.box_id],
+    );
+
+    if (vinculoExistente.rows.length > 0) {
+      return res.redirect(`/boxes/${convite.box_id}`);
+    }
+    const client = await pool.connect();
+
+    let novoVinculo;
+
+    try {
+      await client.query("BEGIN");
+      const conviteBloqueado = await client.query(
+        `
+    SELECT id, limite_usos, usos, ativo
+    FROM convites
+    WHERE id = $1
+    FOR UPDATE
+  `,
+        [convite.id],
+      );
+      const estadoConvite = conviteBloqueado.rows[0];
+      if (!estadoConvite.ativo) {
+        await client.query("ROLLBACK");
+
+        return res.status(403).send("Este convite não está mais ativo.");
+      }
+
+      if (
+        estadoConvite.limite_usos !== null &&
+        estadoConvite.usos >= estadoConvite.limite_usos
+      ) {
+        return res
+          .status(403)
+          .send("Este convite atingiu o limite de acessos.");
+      }
+
+      const resultadoVinculo = await client.query(
+        `
+      INSERT INTO usuarios_boxes (usuario_id, box_id, papel)
+      VALUES ($1, $2, $3)
+      RETURNING usuario_id, box_id, papel
+    `,
+        [req.usuario.id, convite.box_id, convite.papel],
+      );
+
+      novoVinculo = resultadoVinculo.rows[0];
+
+      await client.query(
+        `
+      UPDATE convites
+      SET usos = usos + 1
+      WHERE id = $1
+    `,
+        [convite.id],
+      );
+
+      await client.query("COMMIT");
+    } catch (erro) {
+      await client.query("ROLLBACK");
+      throw erro;
+    } finally {
+      client.release();
+    }
+
+    return res.redirect(`/boxes/${convite.box_id}`);
+
+    res.json({
+      box_id: convite.box_id,
+      box_nome: convite.nome,
+      papel: convite.papel,
+      data_evento: convite.data_evento,
+    });
+  } catch (erro) {
+    console.error(erro);
+
+    res.status(500).send("Erro interno do servidor.");
+  }
 });
 
 app.listen(PORT, function () {

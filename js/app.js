@@ -324,6 +324,14 @@ async function carregarParticipantes() {
     const participante = document.createElement("div");
     participante.className = "participant";
 
+    let foto = null;
+
+    if (usuario.foto_perfil) {
+      foto = document.createElement("img");
+      foto.src = usuario.foto_perfil;
+      foto.alt = `Foto de ${usuario.nome}`;
+    }
+
     const info = document.createElement("div");
     info.className = "participant-info";
 
@@ -336,9 +344,65 @@ async function carregarParticipantes() {
     info.appendChild(nome);
     info.appendChild(papel);
 
+    if (foto) participante.appendChild(foto);
+
     participante.appendChild(info);
     lista.appendChild(participante);
   });
 }
 
 carregarParticipantes();
+
+async function carregarPerfil() {
+  const perfilNome = document.querySelector("#perfil-nome");
+  const perfilEmail = document.querySelector("#perfil-email");
+  const perfilFoto = document.querySelector("#perfil-foto");
+
+  if (!perfilNome || !perfilEmail) return;
+
+  const resposta = await fetch("/api/auth/me");
+  const dados = await resposta.json();
+
+  perfilNome.textContent = dados.usuario.nome;
+  perfilEmail.textContent = dados.usuario.email;
+
+  if (perfilFoto && dados.usuario.foto_perfil) {
+    perfilFoto.src = dados.usuario.foto_perfil;
+  }
+
+  const listaBoxes = document.querySelector("#minhas-boxes");
+
+  if (listaBoxes) {
+    const respostaBoxes = await fetch("/api/minhas-boxes");
+    const boxes = await respostaBoxes.json();
+
+    listaBoxes.innerHTML = "";
+
+    boxes.forEach((box) => {
+      const card = document.createElement("a");
+      card.className = "user-box-card";
+      card.href = `/boxes/${box.id}`;
+
+      const info = document.createElement("div");
+      info.className = "user-box-info";
+
+      const nome = document.createElement("h3");
+      nome.textContent = box.nome;
+
+      const evento = document.createElement("p");
+      evento.textContent = box.evento;
+
+      const papel = document.createElement("span");
+      papel.textContent = box.papel;
+
+      info.appendChild(nome);
+      info.appendChild(evento);
+      info.appendChild(papel);
+
+      card.appendChild(info);
+      listaBoxes.appendChild(card);
+    });
+  }
+}
+
+carregarPerfil();
