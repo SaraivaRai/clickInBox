@@ -166,7 +166,25 @@ async function autenticarPagina(req, res, next) {
     );
   }
 
-  return autenticarUsuario(req, res, next);
+  const resultado = await pool.query(
+  `
+    SELECT usuario_id
+    FROM sessoes
+    WHERE token = $1
+      AND expira_em > CURRENT_TIMESTAMP
+  `,
+  [tokenSessao],
+);
+
+if (resultado.rows.length === 0) {
+  res.clearCookie("clickinbox_session");
+
+  return res.redirect(
+    `/login.html?retorno=${encodeURIComponent(req.originalUrl)}`,
+  );
+}
+
+return autenticarUsuario(req, res, next);
 }
 
 app.get("/", function (req, res) {
@@ -821,6 +839,25 @@ app.get("/api/auth/me", autenticarUsuario, async function (req, res) {
 
   res.json({
     usuario: resultado.rows[0],
+  });
+});
+app.post("/api/auth/logout", async function (req, res) {
+  const tokenSessao = obterCookie(req, "clickinbox_session");
+
+  if (tokenSessao) {
+    await pool.query(
+      `
+        DELETE FROM sessoes
+        WHERE token = $1
+      `,
+      [tokenSessao],
+    );
+  }
+
+  res.clearCookie("clickinbox_session");
+
+  res.json({
+    mensagem: "Logout realizado com sucesso",
   });
 });
 

@@ -406,3 +406,62 @@ async function carregarPerfil() {
 }
 
 carregarPerfil();
+const botaoLogout = document.getElementById("btn-logout");
+
+if (botaoLogout) {
+  botaoLogout.addEventListener("click", async function () {
+    await fetch("/api/auth/logout", {
+      method: "POST",
+    });
+
+    window.location.href = "/login.html";
+  });
+}
+async function carregarContaHeader() {
+  const areaConta = document.getElementById("header-account");
+
+  if (!areaConta) {
+    return;
+  }
+
+  try {
+    const resposta = await fetch("/api/auth/me");
+
+    if (!resposta.ok) {
+      return;
+    }
+
+    const dados = await resposta.json();
+    const usuario = dados.usuario;
+
+    areaConta.innerHTML = "";
+
+    const linkPerfil = document.createElement("a");
+    linkPerfil.href = "/perfil";
+
+    if (usuario.foto_perfil) {
+      const fotoPerfil = document.createElement("img");
+      fotoPerfil.src = usuario.foto_perfil;
+      fotoPerfil.alt = `Perfil de ${usuario.nome}`;
+      fotoPerfil.className = "header-profile-photo";
+
+      linkPerfil.appendChild(fotoPerfil);
+    } else {
+      linkPerfil.textContent = "Perfil";
+    }
+
+    areaConta.appendChild(linkPerfil);
+  } catch (erro) {
+    console.error("Erro ao verificar sessão:", erro);
+  }
+}
+
+carregarContaHeader();
+
+const botaoLogin = document.getElementById("btn-login");
+
+if (botaoLogin) {
+  botaoLogin.addEventListener("click", function () {
+    window.location.href = "/login.html?retorno=/";
+  });
+}
