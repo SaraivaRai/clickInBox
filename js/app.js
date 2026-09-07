@@ -38,9 +38,21 @@ async function carregarBox() {
   const box = await resposta.json();
   const boxNome = document.querySelector("#box-nome");
   const boxEvento = document.querySelector("#box-evento");
+  const boxImagemPrincipal = document.querySelector("#box-imagem-principal");
+  const boxMusica = document.querySelector("#box-musica");
+  const boxMusicaSource = document.querySelector("#box-musica-source");
 
   if (boxNome) boxNome.textContent = box.nome;
   if (boxEvento) boxEvento.textContent = box.evento;
+
+  if (boxImagemPrincipal) {
+    boxImagemPrincipal.src = box.imagem_principal;
+    boxImagemPrincipal.alt = `${box.nome} - ${box.evento}`;
+  }
+  if (boxMusica && boxMusicaSource) {
+    boxMusicaSource.src = box.musica;
+    boxMusica.load();
+  }
 }
 
 carregarBox();
