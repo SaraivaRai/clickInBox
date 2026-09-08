@@ -167,24 +167,24 @@ async function autenticarPagina(req, res, next) {
   }
 
   const resultado = await pool.query(
-  `
+    `
     SELECT usuario_id
     FROM sessoes
     WHERE token = $1
       AND expira_em > CURRENT_TIMESTAMP
   `,
-  [tokenSessao],
-);
-
-if (resultado.rows.length === 0) {
-  res.clearCookie("clickinbox_session");
-
-  return res.redirect(
-    `/login.html?retorno=${encodeURIComponent(req.originalUrl)}`,
+    [tokenSessao],
   );
-}
 
-return autenticarUsuario(req, res, next);
+  if (resultado.rows.length === 0) {
+    res.clearCookie("clickinbox_session");
+
+    return res.redirect(
+      `/login.html?retorno=${encodeURIComponent(req.originalUrl)}`,
+    );
+  }
+
+  return autenticarUsuario(req, res, next);
 }
 
 app.get("/", function (req, res) {
@@ -300,7 +300,16 @@ app.get(
         "SELECT usuarios.id, usuarios.nome, usuarios.foto_perfil, usuarios_boxes.papel FROM usuarios " +
           "JOIN usuarios_boxes ON usuarios.id = usuarios_boxes.usuario_id " +
           "JOIN boxes ON boxes.id = usuarios_boxes.box_id " +
-          "WHERE boxes.id = $1",
+          "WHERE boxes.id = $1 " +
+          "ORDER BY " +
+          "CASE usuarios_boxes.papel " +
+          "WHEN 'protagonista' THEN 1 " +
+          "WHEN 'mae' THEN 2 " +
+          "WHEN 'pai' THEN 3 " +
+          "WHEN 'coautora' THEN 4 " +
+          "WHEN 'convidado' THEN 5 " +
+          "ELSE 6 END, " +
+          "usuarios.nome ASC",
         [boxId],
       );
 
@@ -329,7 +338,8 @@ app.get(
           "JOIN usuarios ON usuarios.id = depoimentos.usuario_id " +
           "JOIN usuarios_boxes ON usuarios_boxes.usuario_id = usuarios.id " +
           "AND usuarios_boxes.box_id = depoimentos.box_id " +
-          "WHERE depoimentos.box_id = $1",
+          "WHERE depoimentos.box_id = $1 " +
+          "ORDER BY depoimentos.criado_em DESC",
         [boxId],
       );
       res.json(resultado.rows);
@@ -358,7 +368,8 @@ app.get(
           "JOIN usuarios ON usuarios.id = memorias.usuario_id " +
           "JOIN usuarios_boxes ON usuarios_boxes.usuario_id = usuarios.id " +
           "AND usuarios_boxes.box_id = memorias.box_id " +
-          "WHERE memorias.box_id = $1",
+          "WHERE memorias.box_id = $1 " +
+          "ORDER BY memorias.criado_em DESC",
         [boxId],
       );
 
@@ -432,7 +443,8 @@ app.get(
           "JOIN usuarios ON usuarios.id = fotos.usuario_id " +
           "JOIN usuarios_boxes ON usuarios_boxes.usuario_id = usuarios.id " +
           "AND usuarios_boxes.box_id = fotos.box_id " +
-          "WHERE fotos.box_id = $1",
+          "WHERE fotos.box_id = $1 " +
+          "ORDER BY fotos.criado_em DESC",
         [boxId],
       );
 

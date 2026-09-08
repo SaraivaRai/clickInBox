@@ -82,8 +82,9 @@ async function carregarFotos() {
 carregarFotos();
 
 const albumPhoto = document.querySelector("#album-photo");
+const albumFeedback = document.querySelector("#album-feedback");
 
-if (albumPhoto) {
+if (albumPhoto && albumFeedback) {
   albumPhoto.addEventListener("change", async function () {
     const arquivo = albumPhoto.files[0];
 
@@ -91,17 +92,37 @@ if (albumPhoto) {
       return;
     }
 
-    const dados = new FormData();
-    dados.append("foto", arquivo);
+    albumFeedback.textContent = "Enviando foto...";
+    albumPhoto.disabled = true;
 
-    const resposta = await fetch(`/api/boxes/${boxId}/fotos`, {
-      method: "POST",
-      body: dados,
-    });
+    try {
+      const dados = new FormData();
+      dados.append("foto", arquivo);
 
-    if (resposta.ok) {
+      const resposta = await fetch(`/api/boxes/${boxId}/fotos`, {
+        method: "POST",
+        body: dados,
+      });
+
+      const respostaDados = await resposta.json();
+
+      if (!resposta.ok) {
+        albumFeedback.textContent =
+          respostaDados.erro || "Não foi possível publicar a foto.";
+        return;
+      }
+
       albumPhoto.value = "";
       await carregarFotos();
+
+      albumFeedback.textContent = "Foto publicada.";
+    } catch (erro) {
+      console.error(erro);
+
+      albumFeedback.textContent =
+        "Não foi possível publicar a foto. Tente novamente.";
+    } finally {
+      albumPhoto.disabled = false;
     }
   });
 }
@@ -156,27 +177,48 @@ carregarDepoimentos();
 
 const testimonialSubmit = document.querySelector("#testimonial-submit");
 const testimonialText = document.querySelector("#testimonial-text");
-if (testimonialSubmit && testimonialText) {
+const testimonialFeedback = document.querySelector("#testimonial-feedback");
+
+if (testimonialSubmit && testimonialText && testimonialFeedback) {
   testimonialSubmit.addEventListener("click", async function () {
     const mensagem = testimonialText.value.trim();
 
     if (!mensagem) {
+      testimonialFeedback.textContent =
+        "Escreva um depoimento antes de publicar.";
       return;
     }
 
-    const resposta = await fetch(`/api/boxes/${boxId}/depoimentos`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        mensagem: mensagem,
-      }),
-    });
+    testimonialFeedback.textContent = "Publicando...";
 
-    if (resposta.ok) {
+    try {
+      const resposta = await fetch(`/api/boxes/${boxId}/depoimentos`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          mensagem: mensagem,
+        }),
+      });
+
+      const dados = await resposta.json();
+
+      if (!resposta.ok) {
+        testimonialFeedback.textContent =
+          dados.erro || "Não foi possível publicar o depoimento.";
+        return;
+      }
+
       testimonialText.value = "";
       await carregarDepoimentos();
+
+      testimonialFeedback.textContent = "Depoimento publicado.";
+    } catch (erro) {
+      console.error(erro);
+
+      testimonialFeedback.textContent =
+        "Não foi possível publicar o depoimento. Tente novamente.";
     }
   });
 }
@@ -246,8 +288,21 @@ carregarMemorias();
 
 const memorySubmit = document.querySelector("#memory-submit");
 const memoryText = document.querySelector("#memory-text");
+const memoryFeedback = document.querySelector("#memory-feedback");
+const memoryFileInput = document.querySelector("#memory-file");
+const memoryFileFeedback = document.querySelector("#memory-file-feedback");
 
-if (memorySubmit && memoryTitle && memoryText) {
+if (memoryFileInput && memoryFileFeedback) {
+  memoryFileInput.addEventListener("change", function () {
+    if (memoryFileInput.files.length > 0) {
+      memoryFileFeedback.textContent = "Foto carregada.";
+    } else {
+      memoryFileFeedback.textContent = "";
+    }
+  });
+}
+
+if (memorySubmit && memoryTitle && memoryText && memoryFeedback) {
   memorySubmit.addEventListener("click", async function () {
     const texto = memoryText.value.trim();
 
@@ -259,27 +314,39 @@ if (memorySubmit && memoryTitle && memoryText) {
     }
 
     if (!memoryTitle.value || !titulo || !texto) {
+      memoryFeedback.textContent =
+        "Preencha os campos obrigatórios antes de publicar.";
       return;
     }
 
-    const memoryFile = document.querySelector("#memory-file");
-    const arquivo = memoryFile.files[0];
+    memoryFeedback.textContent = "Publicando...";
 
-    const dados = new FormData();
+    try {
+      const memoryFile = document.querySelector("#memory-file");
+      const arquivo = memoryFile.files[0];
 
-    dados.append("titulo", titulo);
-    dados.append("texto", texto);
+      const dados = new FormData();
 
-    if (arquivo) {
-      dados.append("foto", arquivo);
-    }
+      dados.append("titulo", titulo);
+      dados.append("texto", texto);
 
-    const resposta = await fetch(`/api/boxes/${boxId}/memorias`, {
-      method: "POST",
-      body: dados,
-    });
+      if (arquivo) {
+        dados.append("foto", arquivo);
+      }
 
-    if (resposta.ok) {
+      const resposta = await fetch(`/api/boxes/${boxId}/memorias`, {
+        method: "POST",
+        body: dados,
+      });
+
+      const respostaDados = await resposta.json();
+
+      if (!resposta.ok) {
+        memoryFeedback.textContent =
+          respostaDados.erro || "Não foi possível publicar a memória.";
+        return;
+      }
+
       memoryTitle.value = "";
       memoryText.value = "";
 
@@ -288,6 +355,13 @@ if (memorySubmit && memoryTitle && memoryText) {
       customTitle.style.display = "none";
 
       await carregarMemorias();
+
+      memoryFeedback.textContent = "Memória publicada.";
+    } catch (erro) {
+      console.error(erro);
+
+      memoryFeedback.textContent =
+        "Não foi possível publicar a memória. Tente novamente.";
     }
   });
 }
