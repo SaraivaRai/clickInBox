@@ -2,11 +2,12 @@ require("dotenv").config({ override: true });
 const crypto = require("crypto");
 const { OAuth2Client } = require("google-auth-library");
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+const fs = require("fs");
+const path = require("path");
 
 const express = require("express");
 const { Pool } = require("pg");
 const multer = require("multer");
-const fs = require("fs");
 const DIAS_ANTES_ESCRITA_CONVIDADO = 1;
 const DIAS_DEPOIS_ESCRITA = 5;
 
@@ -43,6 +44,7 @@ app.use(express.json());
 app.use("/css", express.static(__dirname + "/css"));
 app.use("/js", express.static(__dirname + "/js"));
 app.use("/assets", express.static(__dirname + "/assets"));
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 function obterCookie(req, nome) {
   const cookies = req.headers.cookie;
@@ -755,6 +757,30 @@ app.post(
   },
 );
 
+async function salvarFotoPerfil(usuarioId, urlFoto) {
+  if (!urlFoto) {
+    return null;
+  }
+
+  const resposta = await fetch(urlFoto);
+
+  if (!resposta.ok) {
+    throw new Error(`Erro ao baixar foto do Google: ${resposta.status}`);
+  }
+
+  const pastaPerfis = path.join(__dirname, "uploads", "perfis");
+
+  fs.mkdirSync(pastaPerfis, { recursive: true });
+
+  const caminhoArquivo = path.join(pastaPerfis, `usuario-${usuarioId}.jpg`);
+
+  const buffer = Buffer.from(await resposta.arrayBuffer());
+
+  fs.writeFileSync(caminhoArquivo, buffer);
+
+  return `/uploads/perfis/usuario-${usuarioId}.jpg`;
+}
+
 app.post("/api/auth/google", async function (req, res) {
   try {
     const { credential } = req.body;
@@ -780,10 +806,10 @@ app.post("/api/auth/google", async function (req, res) {
 
     if (usuarioExistente.rows.length === 0) {
       const novoUsuario = await pool.query(
-        `INSERT INTO usuarios (nome, email, oauth_provider, oauth_id, foto_perfil)
-        VALUES ($1, $2, $3, $4, $5)
-        RETURNING id, nome, email, foto_perfil`,
-        [payload.name, payload.email, "google", payload.sub, payload.picture],
+        `INSERT INTO usuarios (nome, email, oauth_provider, oauth_id)
+     VALUES ($1, $2, $3, $4)
+     RETURNING id, nome, email, foto_perfil`,
+        [payload.name, payload.email, "google", payload.sub],
       );
 
       usuario = novoUsuario.rows[0];
@@ -791,19 +817,31 @@ app.post("/api/auth/google", async function (req, res) {
       const usuarioAtualizado = await pool.query(
         `UPDATE usuarios
      SET nome = $1,
-         email = $2,
-         foto_perfil = $3
-     WHERE id = $4
+         email = $2
+     WHERE id = $3
      RETURNING id, nome, email, foto_perfil`,
-        [
-          payload.name,
-          payload.email,
-          payload.picture,
-          usuarioExistente.rows[0].id,
-        ],
+        [payload.name, payload.email, usuarioExistente.rows[0].id],
       );
 
       usuario = usuarioAtualizado.rows[0];
+    }
+
+    try {
+      const fotoLocal = await salvarFotoPerfil(usuario.id, payload.picture);
+
+      if (fotoLocal) {
+        const fotoAtualizada = await pool.query(
+          `UPDATE usuarios
+       SET foto_perfil = $1
+       WHERE id = $2
+       RETURNING id, nome, email, foto_perfil`,
+          [fotoLocal, usuario.id],
+        );
+
+        usuario = fotoAtualizada.rows[0];
+      }
+    } catch (erroFoto) {
+      console.error("Erro ao atualizar foto de perfil:", erroFoto);
     }
     console.log(usuarioExistente.rows);
     console.log("Usuário Click In Box:", usuario);
@@ -934,8 +972,6 @@ app.get("/convite/:token", autenticarPagina, async function (req, res) {
     }
     const client = await pool.connect();
 
-    let novoVinculo;
-
     try {
       await client.query("BEGIN");
       const conviteBloqueado = await client.query(
@@ -951,19 +987,27 @@ app.get("/convite/:token", autenticarPagina, async function (req, res) {
       if (!estadoConvite.ativo) {
         await client.query("ROLLBACK");
 
-        return res.status(403).send("Este convite não está mais ativo.");
+        return res
+          .status(403)
+          .send(
+            "Este convite não está mais disponível. Entre em contato com a Click In Box para verificarmos seu acesso.",
+          );
       }
 
       if (
         estadoConvite.limite_usos !== null &&
         estadoConvite.usos >= estadoConvite.limite_usos
       ) {
+        await client.query("ROLLBACK");
+
         return res
           .status(403)
-          .send("Este convite atingiu o limite de acessos.");
+          .send(
+            "Este convite já atingiu o limite de acessos. Entre em contato com a mãe da aniversariante ou com a Click In Box para verificarmos seu acesso.",
+          );
       }
 
-      const resultadoVinculo = await client.query(
+     await client.query(
         `
       INSERT INTO usuarios_boxes (usuario_id, box_id, papel)
       VALUES ($1, $2, $3)
@@ -971,8 +1015,6 @@ app.get("/convite/:token", autenticarPagina, async function (req, res) {
     `,
         [req.usuario.id, convite.box_id, convite.papel],
       );
-
-      novoVinculo = resultadoVinculo.rows[0];
 
       await client.query(
         `
@@ -992,13 +1034,6 @@ app.get("/convite/:token", autenticarPagina, async function (req, res) {
     }
 
     return res.redirect(`/boxes/${convite.box_id}`);
-
-    res.json({
-      box_id: convite.box_id,
-      box_nome: convite.nome,
-      papel: convite.papel,
-      data_evento: convite.data_evento,
-    });
   } catch (erro) {
     console.error(erro);
 
