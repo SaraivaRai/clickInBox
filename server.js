@@ -44,7 +44,14 @@ app.use(express.json());
 app.use("/css", express.static(__dirname + "/css"));
 app.use("/js", express.static(__dirname + "/js"));
 app.use("/assets", express.static(__dirname + "/assets"));
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.use(
+  "/uploads/perfis",
+  express.static(path.join(__dirname, "uploads", "perfis")),
+);
+
+app.get("/manifest.webmanifest", (req, res) => {
+  res.sendFile(path.join(__dirname, "manifest.webmanifest"));
+});
 
 function obterCookie(req, nome) {
   const cookies = req.headers.cookie;
