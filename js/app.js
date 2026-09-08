@@ -122,18 +122,31 @@ async function carregarDepoimentos() {
     const article = document.createElement("article");
     article.classList.add("testimonial");
 
-    article.innerHTML = `
-            <div class="testimonial-author">
-                <div>
-                    <h3>${depoimento.nome}</h3>
-                    <span>${depoimento.papel}</span>
-                </div>
-            </div>
+    const author = document.createElement("div");
+    author.classList.add("testimonial-author");
 
-            <div class="testimonial-message">
-                <p>${depoimento.mensagem}</p>
-            </div>
-        `;
+    const authorInfo = document.createElement("div");
+
+    const nome = document.createElement("h3");
+    nome.textContent = depoimento.nome;
+
+    const papel = document.createElement("span");
+    papel.textContent = depoimento.papel;
+
+    authorInfo.appendChild(nome);
+    authorInfo.appendChild(papel);
+    author.appendChild(authorInfo);
+
+    const message = document.createElement("div");
+    message.classList.add("testimonial-message");
+
+    const texto = document.createElement("p");
+    texto.textContent = depoimento.mensagem;
+
+    message.appendChild(texto);
+
+    article.appendChild(author);
+    article.appendChild(message);
 
     testimonialsList.appendChild(article);
   });
