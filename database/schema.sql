@@ -16,6 +16,7 @@ CREATE TABLE usuarios (
   oauth_id VARCHAR(255) NOT NULL,
   criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   foto_perfil TEXT,
+  admin BOOLEAN NOT NULL DEFAULT FALSE,
   UNIQUE (oauth_provider, oauth_id)
 );
 

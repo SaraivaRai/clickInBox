@@ -123,10 +123,14 @@ async function autenticarUsuario(req, res, next) {
   }
 
   const resultado = await pool.query(
-    `SELECT usuario_id, expira_em
-     FROM sessoes
-     WHERE token = $1
-       AND expira_em > CURRENT_TIMESTAMP`,
+    `SELECT sessoes.usuario_id,
+          sessoes.expira_em,
+          usuarios.admin
+   FROM sessoes
+   JOIN usuarios
+     ON usuarios.id = sessoes.usuario_id
+   WHERE sessoes.token = $1
+     AND sessoes.expira_em > CURRENT_TIMESTAMP`,
     [tokenSessao],
   );
 
@@ -136,6 +140,7 @@ async function autenticarUsuario(req, res, next) {
 
   req.usuario = {
     id: resultado.rows[0].usuario_id,
+    admin: resultado.rows[0].admin,
   };
 
   const validadeAtual = new Date(resultado.rows[0].expira_em);
@@ -228,6 +233,10 @@ app.get(
 );
 async function autorizarBox(req, res, next) {
   const boxId = req.params.boxId;
+
+  if (req.usuario.admin) {
+    return next();
+  }
 
   const vinculo = await pool.query(
     "SELECT 1 FROM usuarios_boxes WHERE usuario_id = $1 AND box_id = $2",
@@ -392,6 +401,7 @@ app.get(
     }
   },
 );
+
 app.get("/api/memorias/:id/foto", autenticarUsuario, async function (req, res) {
   const memoriaId = req.params.id;
 
@@ -415,15 +425,17 @@ app.get("/api/memorias/:id/foto", autenticarUsuario, async function (req, res) {
       });
     }
 
-    const vinculo = await pool.query(
-      "SELECT 1 FROM usuarios_boxes WHERE usuario_id = $1 AND box_id = $2",
-      [req.usuario.id, memoria.box_id],
-    );
+    if (!req.usuario.admin) {
+      const vinculo = await pool.query(
+        "SELECT 1 FROM usuarios_boxes WHERE usuario_id = $1 AND box_id = $2",
+        [req.usuario.id, memoria.box_id],
+      );
 
-    if (vinculo.rows.length === 0) {
-      return res.status(403).json({
-        erro: "Usuário não pertence a esta Box",
-      });
+      if (vinculo.rows.length === 0) {
+        return res.status(403).json({
+          erro: "Usuário não pertence a esta Box",
+        });
+      }
     }
 
     res.sendFile(memoria.foto, {
@@ -485,15 +497,17 @@ app.get("/api/fotos/:id/arquivo", autenticarUsuario, async function (req, res) {
 
     const foto = resultado.rows[0];
 
-    const vinculo = await pool.query(
-      "SELECT 1 FROM usuarios_boxes WHERE usuario_id = $1 AND box_id = $2",
-      [req.usuario.id, foto.box_id],
-    );
+    if (!req.usuario.admin) {
+      const vinculo = await pool.query(
+        "SELECT 1 FROM usuarios_boxes WHERE usuario_id = $1 AND box_id = $2",
+        [req.usuario.id, foto.box_id],
+      );
 
-    if (vinculo.rows.length === 0) {
-      return res.status(403).json({
-        erro: "Usuário não pertence a esta Box",
-      });
+      if (vinculo.rows.length === 0) {
+        return res.status(403).json({
+          erro: "Usuário não pertence a esta Box",
+        });
+      }
     }
 
     res.sendFile(foto.arquivo, {
@@ -582,6 +596,12 @@ app.post(
       `,
         [req.usuario.id, boxId],
       );
+
+      if (vinculo.rows.length === 0) {
+        return res.status(403).json({
+          erro: "Usuário não pertence a esta Box",
+        });
+      }
 
       const { papel, data_evento } = vinculo.rows[0];
 
@@ -688,6 +708,12 @@ app.post(
       `,
         [req.usuario.id, boxId],
       );
+
+      if (vinculo.rows.length === 0) {
+        return res.status(403).json({
+          erro: "Usuário não pertence a esta Box",
+        });
+      }
 
       const { papel, data_evento } = vinculo.rows[0];
 
@@ -1014,7 +1040,7 @@ app.get("/convite/:token", autenticarPagina, async function (req, res) {
           );
       }
 
-     await client.query(
+      await client.query(
         `
       INSERT INTO usuarios_boxes (usuario_id, box_id, papel)
       VALUES ($1, $2, $3)
