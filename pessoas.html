@@ -4,36 +4,31 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="/css/style.css" />
-    <link rel="icon" type="image/png" href="/assets/icons/icon-192.png">
+    <link rel="icon" type="image/png" href="/assets/icons/icon-192.png" />
     <title>Click In Box</title>
   </head>
   <body>
-    <header>
-      <a href="/">
-         <img src="/assets/logo/logo.png" alt="Click In Box" />
-      </a>     
+     <header>
+      <a href="/" class="header-logo">
+        <img src="/assets/logo/logo.png" alt="Click In Box" />
+      </a>
+
+      <div class="header-account" id="header-account">
+        <button type="button" id="btn-login">Entrar</button>
+      </div>
     </header>
     <main>
-    <section class="people">
-  <div class="people-header">
-    <h1>Pessoas</h1>
- <a id="box-return" class="box-return" href="#"> Mariazinha, 15 anos </a>
-  </div>
+      <section class="people">
+        <div class="people-header">
+          <h1>Pessoas</h1>
+          <a id="box-return" class="box-return" href="#">
+            Mariazinha, 15 anos
+          </a>
+        </div>
+        <div class="people-protagonist" id="people-protagonist"></div>
 
-  <div class="people-protagonist">
-    <img
-      src="/assets/images/stories/story-01.jpeg"
-      alt="Mariazinha"
-    />
-
-    <div class="people-protagonist-info">
-      <h2>Mariazinha</h2>
-      <span>Protagonista</span>
-    </div>
-  </div>
-
-  <div class="people-list"></div>
-</section>
+        <div class="people-list"></div>
+      </section>
     </main>
     <footer class="footer">
       <img src="/assets/logo/logo.png" alt="Click In Box" />

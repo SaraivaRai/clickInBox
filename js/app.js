@@ -70,12 +70,16 @@ async function carregarFotos() {
   const fotos = await resposta.json();
 
   fotos.forEach(function (foto) {
-    const imagem = document.createElement("img");
+    const link = document.createElement("a");
+    link.href = `/api/fotos/${foto.id}/arquivo`;
+    link.target = "_blank";
 
+    const imagem = document.createElement("img");
     imagem.src = `/api/fotos/${foto.id}/arquivo`;
     imagem.alt = `Foto compartilhada por ${foto.nome}`;
 
-    albumGrid.appendChild(imagem);
+    link.appendChild(imagem);
+    albumGrid.appendChild(link);
   });
 }
 
@@ -263,13 +267,17 @@ async function carregarMemorias() {
     content.appendChild(titulo);
 
     if (memoria.foto) {
-      const imagem = document.createElement("img");
+      const link = document.createElement("a");
+      link.href = `/api/memorias/${memoria.id}/foto`;
+      link.target = "_blank";
 
+      const imagem = document.createElement("img");
       imagem.src = `/api/memorias/${memoria.id}/foto`;
       imagem.alt = `Foto da memória compartilhada por ${memoria.nome}`;
       imagem.classList.add("memory-photo");
 
-      content.appendChild(imagem);
+      link.appendChild(imagem);
+      content.appendChild(link);
     }
 
     const texto = document.createElement("p");
@@ -378,21 +386,70 @@ async function carregarPessoas() {
   const resposta = await fetch(`/api/boxes/${boxId}/usuarios`);
   const pessoas = await resposta.json();
 
-  pessoas.forEach(function (pessoa) {
-    const article = document.createElement("article");
-    article.classList.add("person");
+  const peopleProtagonist = document.querySelector("#people-protagonist");
 
-    const nome = document.createElement("h3");
-    nome.textContent = pessoa.nome;
+  const protagonista = pessoas.find(
+    (pessoa) => pessoa.papel === "protagonista",
+  );
+
+  if (peopleProtagonist && protagonista) {
+    peopleProtagonist.innerHTML = "";
+
+    if (protagonista.foto_perfil) {
+      const imagem = document.createElement("img");
+      imagem.src = protagonista.foto_perfil;
+      imagem.alt = `Foto de ${protagonista.nome}`;
+
+      peopleProtagonist.appendChild(imagem);
+    }
+
+    const info = document.createElement("div");
+    info.classList.add("people-protagonist-info");
+
+    const nome = document.createElement("h2");
+    nome.textContent = protagonista.nome;
 
     const papel = document.createElement("span");
-    papel.textContent = pessoa.papel;
+    const partesNome = protagonista.nome.trim().split(/\s+/);
 
-    article.appendChild(nome);
-    article.appendChild(papel);
+    nome.textContent =
+      partesNome.length > 1
+        ? `${partesNome[0]} ${partesNome[partesNome.length - 1]}`
+        : partesNome[0];
 
-    peopleList.appendChild(article);
-  });
+    info.appendChild(nome);
+    info.appendChild(papel);
+    peopleProtagonist.appendChild(info);
+  }
+
+  pessoas
+    .filter((pessoa) => pessoa.papel !== "protagonista")
+    .forEach(function (pessoa) {
+      const article = document.createElement("article");
+      article.classList.add("person");
+
+      if (pessoa.foto_perfil) {
+        const imagem = document.createElement("img");
+        imagem.src = pessoa.foto_perfil;
+        imagem.alt = `Foto de ${pessoa.nome}`;
+
+        article.appendChild(imagem);
+      }
+      const nome = document.createElement("h3");
+      const partesNome = pessoa.nome.trim().split(/\s+/);
+      nome.textContent =
+        partesNome.length > 1
+          ? `${partesNome[0]} ${partesNome[partesNome.length - 1]}`
+          : partesNome[0];
+
+      const papel = document.createElement("span");
+      papel.textContent = pessoa.papel;
+
+      article.appendChild(nome);
+      article.appendChild(papel);
+
+      peopleList.appendChild(article);
+    });
 }
 
 carregarPessoas();
@@ -435,7 +492,7 @@ async function carregarParticipantes() {
     info.className = "participant-info";
 
     const nome = document.createElement("h3");
-    nome.textContent = usuario.nome;
+    nome.textContent = usuario.nome.split(" ")[0];
 
     const papel = document.createElement("span");
     papel.textContent = usuario.papel;
@@ -494,10 +551,15 @@ async function carregarPerfil() {
       const papel = document.createElement("span");
       papel.textContent = box.papel;
 
+      const imagem = document.createElement("img");
+      imagem.src = box.imagem_principal;
+      imagem.alt = `${box.nome} - ${box.evento}`;
+
       info.appendChild(nome);
       info.appendChild(evento);
       info.appendChild(papel);
 
+      card.appendChild(imagem);
       card.appendChild(info);
       listaBoxes.appendChild(card);
     });
@@ -562,5 +624,31 @@ const botaoLogin = document.getElementById("btn-login");
 if (botaoLogin) {
   botaoLogin.addEventListener("click", function () {
     window.location.href = "/login.html?retorno=/";
+  });
+}
+
+const boxAudio = document.getElementById("box-musica");
+const musicPlayButton = document.getElementById("music-play-button");
+
+if (boxAudio && musicPlayButton) {
+  musicPlayButton.addEventListener("click", async () => {
+    if (boxAudio.paused) {
+      try {
+        await boxAudio.play();
+        musicPlayButton.textContent = "❚❚";
+        musicPlayButton.setAttribute("aria-label", "Pausar música");
+      } catch (erro) {
+        console.error("Não foi possível reproduzir a música:", erro);
+      }
+    } else {
+      boxAudio.pause();
+      musicPlayButton.textContent = "▶";
+      musicPlayButton.setAttribute("aria-label", "Reproduzir música");
+    }
+  });
+
+  boxAudio.addEventListener("ended", () => {
+    musicPlayButton.textContent = "▶";
+    musicPlayButton.setAttribute("aria-label", "Reproduzir música");
   });
 }

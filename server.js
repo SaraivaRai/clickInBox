@@ -951,6 +951,7 @@ app.get("/api/minhas-boxes", autenticarUsuario, async function (req, res) {
         boxes.id,
         boxes.nome,
         boxes.evento,
+        boxes.imagem_principal,
         usuarios_boxes.papel
       FROM usuarios_boxes
       JOIN boxes ON boxes.id = usuarios_boxes.box_id

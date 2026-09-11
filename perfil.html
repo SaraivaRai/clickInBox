@@ -4,37 +4,57 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="/css/style.css" />
-    <link rel="icon" type="image/png" href="/assets/icons/icon-192.png">
+    <link rel="icon" type="image/png" href="/assets/icons/icon-192.png" />
     <title>Click In Box</title>
   </head>
-  <body>
+  <body class="profile-page">
     <header>
       <a href="/">
         <img src="/assets/logo/logo.png" alt="Click In Box" />
       </a>
     </header>
-    <main>
+    <main class="profile-main">
       <section class="user-profile">
         <img
           id="perfil-foto"
           src="/assets/images/stories/story-01.jpeg"
           alt="Foto de perfil do usuário"
+          class="profile-avatar"
         />
 
         <div class="user-info">
           <h1 id="perfil-nome">Nome da pessoa</h1>
           <p id="perfil-email">email@exemplo.com</p>
-          <button id="btn-logout" class="logout-button">Sair da conta</button>
+
+          <div class="profile-account-actions">
+            <button id="btn-logout" class="logout-button">
+              <svg class="logout-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M10 5H6.5A2.5 2.5 0 0 0 4 7.5v9A2.5 2.5 0 0 0 6.5 19H10"
+                />
+                <path d="M14 8l4 4-4 4" />
+                <path d="M18 12H9" />
+              </svg>
+
+              <span>Sair da conta</span>
+            </button>
+          </div>
         </div>
       </section>
+
+      <div class="profile-divider" aria-hidden="true">
+        <span>♥</span>
+      </div>
+
       <section class="user-boxes">
-        <h2>Minhas Boxes</h2>
+        <h2>
+          <span>Minhas</span>
+          <strong>BOX</strong>
+        </h2>
+
         <div class="user-boxes-list" id="minhas-boxes"></div>
       </section>
     </main>
-    <footer class="footer">
-      <img src="/assets/logo/logo.png" alt="Click In Box" />
-    </footer>
     <script src="/js/app.js"></script>
   </body>
 </html>

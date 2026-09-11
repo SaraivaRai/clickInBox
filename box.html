@@ -4,67 +4,150 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="/css/style.css" />
-    <link rel="icon" type="image/png" href="/assets/icons/icon-192.png">
+    <link rel="icon" type="image/png" href="/assets/icons/icon-192.png" />
     <title>Click In Box</title>
   </head>
-  <a href="/login.html">Entrar</a>
 
-  <body>
+  <body class="box-page">
     <header>
-      <a href="/">
+      <a href="/" class="header-logo">
         <img src="/assets/logo/logo.png" alt="Click In Box" />
       </a>
+
+      <div class="header-account" id="header-account">
+        <button type="button" id="btn-login">Entrar</button>
+      </div>
     </header>
 
-    <main>
-      <div class="box-layout">
-        <section class="box-profile">
-          <img id="box-imagem-principal" src="" alt="" />
+    <main class="box-main">
+      <!-- HERO -->
+      <section class="box-hero">
+        <img id="box-imagem-principal" class="box-hero-image" src="" alt="" />
+
+        <div class="box-hero-overlay">
+          <span class="box-hero-heart" aria-hidden="true">♡</span>
 
           <div class="box-info">
             <h1 id="box-nome">Mariazinha</h1>
-            <p id="box-evento">15 anos</p>
+
+            <div class="box-event-line">
+              <span></span>
+              <p id="box-evento">15 anos</p>
+              <span></span>
+            </div>
+
+            <blockquote>
+              “Alguns momentos merecem durar mais que uma noite.”
+            </blockquote>
+
+            <span class="box-hero-small-heart" aria-hidden="true">♥</span>
           </div>
+        </div>
+      </section>
 
-          <section class="box-music">
-            <audio controls id="box-musica">
-              <source id="box-musica-source" src="" type="audio/mpeg" />
-              Seu navegador não suporta reprodução de áudio.
-            </audio>
-          </section>
-        </section>
+      <!-- MÚSICA -->
+      <section class="box-music">
+        <audio id="box-musica">
+          <source id="box-musica-source" src="" type="audio/mpeg" />
+          Seu navegador não suporta reprodução de áudio.
+        </audio>
 
-        <section class="box-gavetas">
-          <h2>Explore esta Box</h2>
+        <button
+          type="button"
+          class="music-play-button"
+          id="music-play-button"
+          aria-label="Reproduzir música"
+        >
+          ▶
+        </button>
 
-          <div class="gavetas-list">
-            <a id="link-album" class="gaveta" href="#">
-              <h3>Álbum</h3>
-            </a>
+        <div class="music-info">
+          <strong>Nossa Música</strong>
+          <span>Versão especial para essa história</span>
+        </div>
 
-            <a id="link-depoimentos" class="gaveta" href="#">
-              <h3>Depoimentos</h3>
-            </a>
+        <div class="music-wave" aria-hidden="true">
+          <i></i><i></i><i></i><i></i><i></i> <i></i><i></i><i></i><i></i
+          ><i></i> <i></i><i></i><i></i><i></i><i></i>
+        </div>
 
-            <a id="link-pessoas" class="gaveta" href="#">
-              <h3>Pessoas</h3>
-            </a>
+        <span class="music-heart" aria-hidden="true">♡</span>
+      </section>
 
-            <a id="link-memorias" class="gaveta" href="#">
-              <h3>Memórias</h3>
-            </a>
-          </div>
-        </section>
-      </div>
+      <!-- FRASE -->
+      <p class="box-manifesto">
+        <span aria-hidden="true">✦</span>
+        Um lugar onde os momentos significam mais.
+        <span aria-hidden="true">✦</span>
+      </p>
+
+      <!-- GAVETAS -->
+      <section class="box-gavetas">
+        <div class="gavetas-list">
+          <a id="link-album" class="gaveta" href="#">
+            <svg class="gaveta-icon" viewBox="0 0 64 64" aria-hidden="true">
+              <rect x="13" y="17" width="34" height="30" rx="2"></rect>
+              <rect x="18" y="12" width="34" height="30" rx="2"></rect>
+              <path d="M23 31l7-7 8 8 5-5 9 9"></path>
+              <circle cx="42" cy="21" r="3"></circle>
+            </svg>
+
+            <h3>Álbum</h3>
+          </a>
+
+          <a id="link-depoimentos" class="gaveta" href="#">
+            <svg class="gaveta-icon" viewBox="0 0 64 64" aria-hidden="true">
+              <path
+                d="M12 15h31a9 9 0 0 1 9 9v10a9 9 0 0 1-9 9H28L17 51l2-8h-7a8 8 0 0 1-8-8V23a8 8 0 0 1 8-8z"
+              ></path>
+              <circle cx="23" cy="29" r="1.5"></circle>
+              <circle cx="31" cy="29" r="1.5"></circle>
+              <circle cx="39" cy="29" r="1.5"></circle>
+            </svg>
+
+            <h3>Depoimentos</h3>
+          </a>
+
+          <a id="link-memorias" class="gaveta" href="#">
+            <svg class="gaveta-icon" viewBox="0 0 64 64" aria-hidden="true">
+              <rect x="13" y="17" width="35" height="32" rx="2"></rect>
+              <rect x="18" y="12" width="35" height="32" rx="2"></rect>
+
+              <path
+                d="M35 37s-9-5.2-9-11a5 5 0 0 1 9-3
+               5 5 0 0 1 9 3c0 5.8-9 11-9 11z"
+              ></path>
+            </svg>
+
+            <h3>Memórias</h3>
+          </a>
+
+          <a id="link-pessoas" class="gaveta" href="#">
+            <svg class="gaveta-icon" viewBox="0 0 64 64" aria-hidden="true">
+              <circle cx="32" cy="20" r="8"></circle>
+              <circle cx="16" cy="26" r="6"></circle>
+              <circle cx="48" cy="26" r="6"></circle>
+
+              <path d="M19 49c0-9 5-15 13-15s13 6 13 15"></path>
+              <path d="M5 48c0-7 4-12 11-12 3 0 5 1 7 3"></path>
+              <path d="M59 48c0-7-4-12-11-12-3 0-5 1-7 3"></path>
+            </svg>
+
+            <h3>Pessoas</h3>
+          </a>
+        </div>
+      </section>
+
+      <!-- PARTICIPANTES -->
       <section class="box-participants">
-        <h2>Pessoas desta história</h2>
+        <h2>
+          <span aria-hidden="true">♡</span>
+          Pessoas especiais nesta história
+        </h2>
 
         <div class="participants-list" id="box-participants"></div>
       </section>
     </main>
-    <footer class="footer">
-      <img src="/assets/logo/logo.png" alt="Click In Box" />
-    </footer>
     <script src="/js/app.js"></script>
   </body>
 </html>
