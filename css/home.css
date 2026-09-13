@@ -1,0 +1,132 @@
+/* =========================
+   Home
+========================= */
+
+/* Hero */
+
+.hero {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1200px;
+    margin: 60px auto 0;
+    padding: 0 24px;
+}
+
+.hero h1 {
+    min-width: 400px;
+    font-family: Georgia, serif;
+    font-size: 48px;
+    line-height: 1.1;
+    font-weight: normal;
+}
+
+.hero h1 span {
+    color: #c89b3c;
+    font-family: Georgia, serif;
+    font-weight: normal;
+}
+
+.hero-photos {
+    display: flex;
+    align-items: flex-start;
+}
+
+.polaroid {
+    background-color: #ffffff;
+    padding: 10px 10px 30px;
+    box-shadow: 0 4px 10px #00000033;
+    position: relative;
+}
+
+.polaroid + .polaroid {
+    margin-left: -30px;
+}
+
+.polaroid img {
+    width: 180px;
+    height: 180px;
+    display: block;
+}
+
+.polaroid:nth-child(1) {
+    transform: rotate(-4deg);
+    z-index: 1;
+}
+
+.polaroid:nth-child(2) {
+    transform: rotate(3deg);
+    z-index: 4;
+}
+
+.polaroid:nth-child(3) {
+    transform: rotate(-2deg);
+    z-index: 3;
+}
+
+.polaroid:nth-child(4) {
+    transform: rotate(4deg);
+    z-index: 2;
+}
+
+
+/* Histórias */
+
+.stories {
+    max-width: 1200px;
+    margin: 60px auto 0;
+}
+
+.stories h2 {
+    font-family: "Allura", cursive;
+    font-size: 32px;
+    text-align: center;
+}
+
+.stories-subtitle {
+    text-align: center;
+}
+
+.stories-list {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 60px;
+}
+
+.stories-list article {
+    width: 280px;
+    border: 1px solid #d8d2c8;
+    border-radius: 8px;
+    background-color: #ffffff;
+    padding: 12px;
+}
+
+.stories-list a {
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    gap: 16px;
+    align-items: center;
+}
+
+.stories-list article img {
+    width: 160px;
+    height: 120px;
+}
+
+.story-info {
+    flex: 1;
+    text-align: center;
+}
+
+.story-info h3 {
+    margin: 0 0 6px;
+    font-size: 18px;
+}
+
+.story-info p {
+    margin: 0;
+    font-size: 14px;
+}
+
+

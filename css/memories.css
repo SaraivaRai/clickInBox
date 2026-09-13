@@ -1,0 +1,237 @@
+/* =========================
+   Memórias
+   Base mobile-first
+========================= */
+
+.memories {
+    width: 100%;
+    padding: 24px 16px;
+}
+
+.memories-header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.memories-header h1 {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 400;
+}
+
+.memories-header p {
+    margin: 6px 0 0;
+    font-size: 14px;
+}
+
+
+/* Formulário */
+
+.memory-form {
+    max-width: 560px;
+    margin: 0 auto 32px;
+}
+.memory-form select {
+    width: 100%;
+    padding: 14px;
+
+    font: inherit;
+    line-height: 1.5;
+
+    background-color: #ffffff;
+    border: 1px solid #d8d2c8;
+    border-bottom: 0;
+    border-radius: 8px 8px 0 0;
+}
+
+#memory-custom-title {
+    display: none;
+}
+
+.memory-form input[type="text"] {
+    margin-bottom: 0;
+    border-radius: 8px 8px 0 0;
+    border-bottom: 0;
+}
+
+.memory-form input[type="text"] {
+    margin-bottom: 0;
+    border-radius: 8px 8px 0 0;
+    border-bottom: 0;
+}
+
+.memory-form textarea {
+    width: 100%;
+    min-height: 140px;
+    padding: 14px;
+    margin-bottom: 16px;
+    border-radius: 0 0 8px 8px;
+    
+    font: inherit;
+    line-height: 1.5;
+
+    background-color: #ffffff;
+    border: 1px solid #d8d2c8;
+    border-radius: 0 0 8px 8px;
+
+    resize: vertical;
+}
+
+
+/* Ações */
+
+.memory-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.memory-actions input[type="file"] {
+    display: none;
+}
+
+.memory-actions label,
+.memory-actions button {
+    padding: 10px 16px;
+
+    background-color: #ffffff;
+    border: 1px solid #d8d2c8;
+    border-radius: 999px;
+
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+/* Memórias publicadas */
+
+.memories-list {
+    width: 100%;
+}
+
+.memory {
+    max-width: 560px;
+    margin: 0 auto 24px;
+    padding: 18px;
+
+    background-color: #ffffff;
+    border: 1px solid #d8d2c8;
+    border-radius: 12px;
+}
+
+.memory-author {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.memory-author img {
+    width: 48px;
+    height: 48px;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.memory-author h3 {
+    margin: 0;
+    font-size: 14px;
+}
+
+.memory-author span {
+    display: block;
+    margin-top: 2px;
+    font-size: 12px;
+}
+
+.memory-content h2 {
+    margin: 0 0 16px;
+    font-size: 18px;
+    font-weight: 500;
+    text-align: center;
+}
+
+.memory-content p {
+    margin: 0 0 12px;
+    line-height: 1.5;
+}
+
+.memory-content p:last-child {
+    margin-bottom: 0;
+}
+.memory-photo {
+    width: 110px;
+    aspect-ratio: 4 / 5;
+    object-fit: cover;
+    border-radius: 8px;
+
+    float: left;
+    margin: 0 14px 8px 0;
+}
+
+/* Label acessível, invisível visualmente */
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* =========================
+   Responsividade da Box
+   mobile-first
+========================= */
+
+@media (min-width: 768px) {
+    .box-profile,
+    .box-gavetas {
+        max-width: 768px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .box-gavetas{
+        max-width: 520px;
+    }
+    .gaveta { 
+        max-width: 200px;
+        padding: 18px;
+    }
+     .participant:nth-child(n + 5) {
+        display: block;
+    }
+}
+@media (min-width: 768px) and (max-width: 1023px) {
+    .box-profile {
+        max-width: 620px;
+        
+    }
+    .box-gavetas {
+    margin: 20px auto;
+}
+
+    .box-participants {
+    margin-top: 8px;
+}
+
+    .footer {
+    margin-top: 8px;
+}
+}
+@media (min-width: 1024px) {
+    .box-layout {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 32px;
+        width: 90%;
+        margin: 0 auto;
+    }
+}

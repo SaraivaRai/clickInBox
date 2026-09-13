@@ -42,7 +42,22 @@ async function carregarBox() {
   const boxMusica = document.querySelector("#box-musica");
   const boxMusicaSource = document.querySelector("#box-musica-source");
 
-  if (boxNome) boxNome.textContent = box.nome;
+  if (boxNome) {
+  const nomes = box.nome.trim().split(/\s+/).slice(0, 2);
+
+  boxNome.replaceChildren();
+
+  nomes.forEach((nome, index) => {
+    const linha = document.createElement("span");
+
+    linha.className =
+      index === 0 ? "nome-linha-1" : "nome-linha-2";
+
+    linha.textContent = nome;
+
+    boxNome.appendChild(linha);
+  });
+}
   if (boxEvento) boxEvento.textContent = box.evento;
 
   if (boxImagemPrincipal) {
@@ -444,6 +459,7 @@ async function carregarPessoas() {
 
       const papel = document.createElement("span");
       papel.textContent = pessoa.papel;
+      
 
       article.appendChild(nome);
       article.appendChild(papel);
@@ -496,6 +512,7 @@ async function carregarParticipantes() {
 
     const papel = document.createElement("span");
     papel.textContent = usuario.papel;
+    papel.className = `tag tag-${usuario.papel.toLowerCase()}`;
 
     info.appendChild(nome);
     info.appendChild(papel);
