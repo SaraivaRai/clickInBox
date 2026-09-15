@@ -351,7 +351,7 @@ app.get(
 
     try {
       const resultado = await pool.query(
-        "SELECT depoimentos.id, usuarios.nome, usuarios_boxes.papel, depoimentos.mensagem " +
+        "SELECT depoimentos.id, usuarios.nome, usuarios.foto_perfil, usuarios_boxes.papel, depoimentos.mensagem " +
           "FROM depoimentos " +
           "JOIN usuarios ON usuarios.id = depoimentos.usuario_id " +
           "JOIN usuarios_boxes ON usuarios_boxes.usuario_id = usuarios.id " +

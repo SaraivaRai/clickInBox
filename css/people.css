@@ -1,0 +1,229 @@
+/* Pessoas — expansão de Pessoas Especiais */
+.people {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0 18px calc(150px + env(safe-area-inset-bottom));
+}
+.people-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin: 15px 0 14px;
+  transform: translateY(-10px);
+}
+
+.people-heading h1 {
+  margin: 0 0 3px;
+  font-family: "Libre Baskerville", Georgia, serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--box-cor-texto);
+}
+
+.people-heading p {
+  margin: 0;
+  font-size: 9px;
+  line-height: 1.4;
+  color: var(--box-cor-texto-suave);
+}
+.people-protagonist {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 112px;
+  box-sizing: border-box;
+  margin-bottom: 20px;
+  padding: 12px 16px;
+  border: 1px solid rgba(182, 123, 60, 0.28);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.34);
+  box-shadow: 0 8px 24px rgba(80, 55, 35, 0.06);
+}
+.people-protagonist-avatar,
+.person-avatar {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border: 2px solid rgba(216, 142, 53, 0.72);
+  border-radius: 50%;
+  background: rgba(230, 147, 44, 0.12);
+  color: #9d672f;
+  font-weight: 700;
+}
+.people-protagonist-avatar {
+  width: 88px;
+  height: 88px;
+  font-size: 22px;
+}
+.people-protagonist-info {
+  min-width: 0;
+}
+.people-protagonist-info h2 {
+  overflow-wrap: anywhere;
+  margin: 0 0 8px;
+  font-family: "Libre Baskerville", Georgia, serif;
+  font-size: 20px;
+  line-height: 1.2;
+  font-weight: 700;
+  color: var(--box-cor-texto);
+}
+
+.people-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  width: 100%;
+}
+.person {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+  min-height: 154px;
+  box-sizing: border-box;
+  padding: 14px 8px 12px;
+  text-align: center;
+  border: 1px solid rgba(182, 123, 60, 0.12);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 14px rgba(80, 55, 35, 0.04);
+}
+.person-avatar {
+  width: 78px;
+  height: 78px;
+  margin-bottom: 9px;
+  font-size: 18px;
+}
+.person h3 {
+  width: 100%;
+  overflow-wrap: anywhere;
+  margin: 0 0 7px;
+  font-size: 11px;
+  line-height: 1.25;
+  font-weight: 700;
+  color: var(--box-cor-texto);
+}
+.people-role {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 3px 7px;
+  border-radius: 999px;
+  font-size: 7px;
+  line-height: 1;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+.people-role.tag-protagonista {
+  background: rgba(230, 147, 44, 0.2);
+  color: #b36800;
+}
+.people-role.tag-convidado {
+  background: rgba(111, 170, 97, 0.18);
+  color: #477d3d;
+}
+.people-role.tag-coautora {
+  background: rgba(159, 117, 201, 0.18);
+  color: #76549a;
+}
+.people-role.tag-pai {
+  background: rgba(87, 129, 164, 0.16);
+  color: #436b8c;
+}
+.people-role.tag-mae {
+  background: rgba(220, 117, 149, 0.18);
+  color: #a84f70;
+}
+
+body:has(.people) {
+  position: relative;
+  isolation: isolate;
+}
+body:has(.people)::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      118deg,
+      transparent 18%,
+      rgba(255, 255, 255, 0.16) 34%,
+      transparent 48%
+    ),
+    linear-gradient(
+      132deg,
+      transparent 52%,
+      rgba(255, 246, 231, 0.18) 67%,
+      transparent 80%
+    );
+  filter: blur(12px);
+}
+body:has(.people)::after {
+  content: "";
+  position: fixed;
+  inset: -12% -18%;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      126deg,
+      transparent 22%,
+      rgba(255, 255, 255, 0) 31%,
+      rgba(255, 255, 255, 0.34) 33.2%,
+      rgba(198, 145, 97, 0.1) 34.5%,
+      rgba(255, 255, 255, 0.2) 36%,
+      transparent 39%
+    ),
+    linear-gradient(
+      151deg,
+      transparent 43%,
+      rgba(221, 177, 139, 0) 48%,
+      rgba(221, 177, 139, 0.09) 50.3%,
+      rgba(255, 255, 255, 0.28) 52%,
+      rgba(255, 255, 255, 0) 55.5%
+    );
+  filter: blur(2px);
+  opacity: 0.92;
+}
+body:has(.people) > header {
+  overflow: hidden;
+}
+body:has(.people) > header::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      126deg,
+      transparent 18%,
+      rgba(255, 255, 255, 0.32) 42%,
+      rgba(198, 145, 97, 0.08) 45%,
+      transparent 51%
+    ),
+    linear-gradient(
+      151deg,
+      transparent 55%,
+      rgba(255, 255, 255, 0.22) 69%,
+      transparent 78%
+    );
+  filter: blur(1px);
+  opacity: 0.8;
+}
+body:has(.people) > header > * {
+  position: relative;
+  z-index: 1;
+}
+@media (min-width: 430px) {
+  .people-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

@@ -30,12 +30,12 @@ if (memoryCreateButton && memoryForm) {
 
     document.documentElement.style.setProperty(
       "--box-internal-hero-reveal",
-      "0px"
+      "0px",
     );
 
     memoryForm.scrollIntoView({
       behavior: "smooth",
-      block: "center"
+      block: "center",
     });
   });
 }
@@ -69,21 +69,20 @@ async function carregarBox() {
   const boxMusicaSource = document.querySelector("#box-musica-source");
 
   if (boxNome) {
-  const nomes = box.nome.trim().split(/\s+/).slice(0, 2);
+    const nomes = box.nome.trim().split(/\s+/).slice(0, 2);
 
-  boxNome.replaceChildren();
+    boxNome.replaceChildren();
 
-  nomes.forEach((nome, index) => {
-    const linha = document.createElement("span");
+    nomes.forEach((nome, index) => {
+      const linha = document.createElement("span");
 
-    linha.className =
-      index === 0 ? "nome-linha-1" : "nome-linha-2";
+      linha.className = index === 0 ? "nome-linha-1" : "nome-linha-2";
 
-    linha.textContent = nome;
+      linha.textContent = nome;
 
-    boxNome.appendChild(linha);
-  });
-}
+      boxNome.appendChild(linha);
+    });
+  }
   if (boxEvento) boxEvento.textContent = box.evento;
 
   if (boxImagemPrincipal) {
@@ -128,8 +127,8 @@ carregarFotos();
 
 const albumPhoto = document.querySelector("#album-photo");
 const albumFeedback = document.querySelector("#album-feedback");
-const albumUploadLabel = document.querySelector('.album-upload label');
-const albumUploadText = document.querySelector('.album-upload label span');
+const albumUploadLabel = document.querySelector(".album-upload label");
+const albumUploadText = document.querySelector(".album-upload label span");
 
 if (albumPhoto && albumFeedback && albumUploadLabel && albumUploadText) {
   albumPhoto.addEventListener("change", async function () {
@@ -182,7 +181,6 @@ if (albumPhoto && albumFeedback && albumUploadLabel && albumUploadText) {
         albumUploadLabel.classList.remove("is-success");
         albumUploadText.textContent = "Adicionar fotos";
       }, 2000);
-
     } catch (erro) {
       console.error(erro);
 
@@ -197,7 +195,6 @@ if (albumPhoto && albumFeedback && albumUploadLabel && albumUploadText) {
         albumUploadLabel.classList.remove("is-error");
         albumUploadText.textContent = "Adicionar fotos";
       }, 2000);
-
     } finally {
       albumPhoto.disabled = false;
     }
@@ -222,6 +219,13 @@ async function carregarDepoimentos() {
 
     const author = document.createElement("div");
     author.classList.add("testimonial-author");
+
+    if (depoimento.foto_perfil) {
+      const foto = document.createElement("img");
+      foto.src = depoimento.foto_perfil;
+      foto.alt = `Foto de ${depoimento.nome}`;
+      author.appendChild(foto);
+    }
 
     const authorInfo = document.createElement("div");
 
@@ -266,7 +270,9 @@ if (testimonialSubmit && testimonialText && testimonialFeedback) {
       return;
     }
 
-    testimonialFeedback.textContent = "Publicando...";
+    testimonialFeedback.textContent = "";
+    testimonialSubmit.textContent = "Publicando...";
+    testimonialSubmit.disabled = true;
 
     try {
       const resposta = await fetch(`/api/boxes/${boxId}/depoimentos`, {
@@ -284,19 +290,48 @@ if (testimonialSubmit && testimonialText && testimonialFeedback) {
       if (!resposta.ok) {
         testimonialFeedback.textContent =
           dados.erro || "Não foi possível publicar o depoimento.";
+
+        testimonialSubmit.textContent = "Enviar depoimento";
+        testimonialSubmit.disabled = false;
         return;
       }
 
       testimonialText.value = "";
       await carregarDepoimentos();
 
-      testimonialFeedback.textContent = "Depoimento publicado.";
+      testimonialSubmit.textContent = "✓ Publicado";
+      testimonialFeedback.textContent = "";
     } catch (erro) {
       console.error(erro);
 
       testimonialFeedback.textContent =
         "Não foi possível publicar o depoimento. Tente novamente.";
+
+      testimonialSubmit.textContent = "Enviar depoimento";
+      testimonialSubmit.disabled = false;
     }
+  });
+}
+
+const testimonialCreateButton = document.querySelector("#testimonial-create-button");
+const testimonialForm = document.querySelector(".testimonial-form");
+
+if (testimonialCreateButton && testimonialForm) {
+  testimonialCreateButton.addEventListener("click", function () {
+    testimonialForm.hidden = false;
+    testimonialCreateButton.hidden = true;
+
+    document.body.classList.add("testimonial-writing");
+
+    document.documentElement.style.setProperty(
+      "--box-internal-hero-reveal",
+      "0px"
+    );
+
+    testimonialForm.scrollIntoView({
+      behavior: "smooth",
+      block: "center"
+    });
   });
 }
 
@@ -316,30 +351,14 @@ async function carregarMemorias() {
     const article = document.createElement("article");
     article.classList.add("memory");
 
-    const author = document.createElement("div");
-    author.classList.add("memory-author");
-
-    const authorInfo = document.createElement("div");
-
-    const nome = document.createElement("h3");
-    nome.textContent = memoria.nome;
-
-    const papel = document.createElement("span");
-    papel.textContent = memoria.papel;
-
-    authorInfo.appendChild(nome);
-    authorInfo.appendChild(papel);
-    author.appendChild(authorInfo);
-
-    const content = document.createElement("div");
-    content.classList.add("memory-content");
-
-    const titulo = document.createElement("h2");
-    titulo.textContent = memoria.titulo;
-
-    content.appendChild(titulo);
-
+    /*
+     * FOTO
+     * Só existe quando a memória possui uma imagem.
+     */
     if (memoria.foto) {
+      const photoWrap = document.createElement("div");
+      photoWrap.classList.add("memory-photo-wrap");
+
       const link = document.createElement("a");
       link.href = `/api/memorias/${memoria.id}/foto`;
       link.target = "_blank";
@@ -350,17 +369,43 @@ async function carregarMemorias() {
       imagem.classList.add("memory-photo");
 
       link.appendChild(imagem);
-      content.appendChild(link);
+      photoWrap.appendChild(link);
+      article.appendChild(photoWrap);
+    } else {
+      article.classList.add("memory-without-photo");
     }
 
+    /*
+     * CONTEÚDO EDITORIAL
+     */
+    const body = document.createElement("div");
+    body.classList.add("memory-body");
+
+    const author = document.createElement("div");
+    author.classList.add("memory-author");
+
+    const nome = document.createElement("h3");
+    nome.textContent = memoria.nome;
+
+    const papel = document.createElement("span");
+    papel.textContent = memoria.papel;
+
+    author.appendChild(nome);
+    author.appendChild(papel);
+
+    const titulo = document.createElement("h2");
+    titulo.classList.add("memory-title");
+    titulo.textContent = memoria.titulo;
+
     const texto = document.createElement("p");
+    texto.classList.add("memory-text");
     texto.textContent = memoria.texto;
 
-    content.appendChild(texto);
+    body.appendChild(author);
+    body.appendChild(titulo);
+    body.appendChild(texto);
 
-    article.appendChild(author);
-    article.appendChild(content);
-
+    article.appendChild(body);
     memoriesList.appendChild(article);
   });
 }
@@ -374,12 +419,26 @@ const memoryFileInput = document.querySelector("#memory-file");
 const memoryFileFeedback = document.querySelector("#memory-file-feedback");
 
 if (memoryFileInput && memoryFileFeedback) {
+  const memoryFileLabel = document.querySelector('label[for="memory-file"]');
+
+  if (memoryFileLabel) {
+    memoryFileLabel.textContent = "▧  Adicionar foto";
+  }
+
   memoryFileInput.addEventListener("change", function () {
-    if (memoryFileInput.files.length > 0) {
-      memoryFileFeedback.textContent = "Foto carregada.";
-    } else {
-      memoryFileFeedback.textContent = "";
+    if (!memoryFileLabel) {
+      return;
     }
+
+    if (memoryFileInput.files.length > 0) {
+      memoryFileLabel.textContent = "✓  Foto adicionada";
+      memoryFileLabel.classList.add("has-photo");
+    } else {
+      memoryFileLabel.textContent = "▧  Adicionar foto";
+      memoryFileLabel.classList.remove("has-photo");
+    }
+
+    memoryFileFeedback.textContent = "";
   });
 }
 
@@ -400,7 +459,9 @@ if (memorySubmit && memoryTitle && memoryText && memoryFeedback) {
       return;
     }
 
-    memoryFeedback.textContent = "Publicando...";
+    memoryFeedback.textContent = "";
+    memorySubmit.textContent = "Publicando...";
+    memorySubmit.disabled = true;
 
     try {
       const memoryFile = document.querySelector("#memory-file");
@@ -425,6 +486,8 @@ if (memorySubmit && memoryTitle && memoryText && memoryFeedback) {
       if (!resposta.ok) {
         memoryFeedback.textContent =
           respostaDados.erro || "Não foi possível publicar a memória.";
+        memorySubmit.textContent = "Compartilhar memória";
+        memorySubmit.disabled = false;
         return;
       }
 
@@ -449,81 +512,65 @@ if (memorySubmit && memoryTitle && memoryText && memoryFeedback) {
 
 async function carregarPessoas() {
   const peopleList = document.querySelector(".people-list");
+  if (!peopleList) return;
 
-  if (!peopleList) {
-    return;
-  }
-
-  peopleList.innerHTML = "";
-
-  const resposta = await fetch(`/api/boxes/${boxId}/usuarios`);
-  const pessoas = await resposta.json();
-
-  const peopleProtagonist = document.querySelector("#people-protagonist");
-
-  const protagonista = pessoas.find(
-    (pessoa) => pessoa.papel === "protagonista",
-  );
-
-  if (peopleProtagonist && protagonista) {
-    peopleProtagonist.innerHTML = "";
-
-    if (protagonista.foto_perfil) {
+  const criarAvatar = (pessoa, classe) => {
+    if (pessoa.foto_perfil) {
       const imagem = document.createElement("img");
-      imagem.src = protagonista.foto_perfil;
-      imagem.alt = `Foto de ${protagonista.nome}`;
-
-      peopleProtagonist.appendChild(imagem);
+      imagem.className = classe;
+      imagem.src = pessoa.foto_perfil;
+      imagem.alt = `Foto de ${pessoa.nome}`;
+      imagem.loading = "lazy";
+      return imagem;
     }
 
+    const fallback = document.createElement("div");
+    fallback.className = `${classe} person-avatar-fallback`;
+    fallback.setAttribute("role", "img");
+    fallback.setAttribute("aria-label", `${pessoa.nome} não possui foto de perfil`);
+    fallback.textContent = pessoa.nome.trim().split(/\s+/).slice(0, 2)
+      .map((parte) => parte.charAt(0)).join("").toUpperCase();
+    return fallback;
+  };
+
+  const criarTagPapel = (papel) => {
+    const tag = document.createElement("span");
+    tag.className = `people-role tag-${papel}`;
+    tag.textContent = papel;
+    return tag;
+  };
+
+  peopleList.innerHTML = "";
+  const resposta = await fetch(`/api/boxes/${boxId}/usuarios`);
+  const pessoas = await resposta.json();
+  const peopleProtagonist = document.querySelector("#people-protagonist");
+  const protagonista = pessoas.find((pessoa) => pessoa.papel === "protagonista");
+
+  if (peopleProtagonist) peopleProtagonist.innerHTML = "";
+
+  if (peopleProtagonist && protagonista) {
+    peopleProtagonist.appendChild(criarAvatar(protagonista, "people-protagonist-avatar"));
     const info = document.createElement("div");
     info.classList.add("people-protagonist-info");
-
     const nome = document.createElement("h2");
-    nome.textContent = protagonista.nome;
-
-    const papel = document.createElement("span");
-    const partesNome = protagonista.nome.trim().split(/\s+/);
-
-    nome.textContent =
-      partesNome.length > 1
-        ? `${partesNome[0]} ${partesNome[partesNome.length - 1]}`
-        : partesNome[0];
-
+    nome.textContent = protagonista.nome.trim();
+    nome.title = protagonista.nome.trim();
     info.appendChild(nome);
-    info.appendChild(papel);
+    info.appendChild(criarTagPapel(protagonista.papel));
     peopleProtagonist.appendChild(info);
   }
 
-  pessoas
-    .filter((pessoa) => pessoa.papel !== "protagonista")
-    .forEach(function (pessoa) {
-      const article = document.createElement("article");
-      article.classList.add("person");
-
-      if (pessoa.foto_perfil) {
-        const imagem = document.createElement("img");
-        imagem.src = pessoa.foto_perfil;
-        imagem.alt = `Foto de ${pessoa.nome}`;
-
-        article.appendChild(imagem);
-      }
-      const nome = document.createElement("h3");
-      const partesNome = pessoa.nome.trim().split(/\s+/);
-      nome.textContent =
-        partesNome.length > 1
-          ? `${partesNome[0]} ${partesNome[partesNome.length - 1]}`
-          : partesNome[0];
-
-      const papel = document.createElement("span");
-      papel.textContent = pessoa.papel;
-      
-
-      article.appendChild(nome);
-      article.appendChild(papel);
-
-      peopleList.appendChild(article);
-    });
+  pessoas.filter((pessoa) => pessoa.papel !== "protagonista").forEach((pessoa) => {
+    const article = document.createElement("article");
+    article.classList.add("person");
+    article.appendChild(criarAvatar(pessoa, "person-avatar"));
+    const nome = document.createElement("h3");
+    nome.textContent = pessoa.nome.trim();
+    nome.title = pessoa.nome.trim();
+    article.appendChild(nome);
+    article.appendChild(criarTagPapel(pessoa.papel));
+    peopleList.appendChild(article);
+  });
 }
 
 carregarPessoas();
@@ -747,7 +794,7 @@ if (boxInternalHero && boxInternalNav) {
   function atualizarHero() {
     document.documentElement.style.setProperty(
       "--box-internal-hero-reveal",
-      `${heroRevelado}px`
+      `${heroRevelado}px`,
     );
   }
 
@@ -779,17 +826,11 @@ if (boxInternalHero && boxInternalNav) {
 
       if (heroJaPassou && movimentoDirecao >= LIMIAR_DIRECAO) {
         if (direcaoAtual === "cima") {
-          heroRevelado = Math.min(
-            ALTURA_HERO,
-            heroRevelado + Math.abs(delta)
-          );
+          heroRevelado = Math.min(ALTURA_HERO, heroRevelado + Math.abs(delta));
         }
 
         if (direcaoAtual === "baixo") {
-          heroRevelado = Math.max(
-            0,
-            heroRevelado - Math.abs(delta)
-          );
+          heroRevelado = Math.max(0, heroRevelado - Math.abs(delta));
         }
 
         atualizarHero();
@@ -807,7 +848,7 @@ if (boxInternalHero && boxInternalNav) {
 
       ultimaPosicao = posicaoAtual;
     },
-    { passive: true }
+    { passive: true },
   );
 }
 
