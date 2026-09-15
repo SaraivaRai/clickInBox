@@ -4,11 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="/css/style.css" />
-    <link rel="icon" type="image/png" href="/assets/icons/icon-192.png">
+    <link rel="icon" type="image/png" href="/assets/icons/icon-192.png" />
     <title>Click In Box</title>
   </head>
   <body>
-     <header>
+    <header>
       <a href="/" class="header-logo">
         <img src="/assets/logo/logo.png" alt="Click In Box" />
       </a>
@@ -17,19 +17,125 @@
         <button type="button" id="btn-login">Entrar</button>
       </div>
     </header>
+    <!-- HERO INTERNO DA BOX -->
+    <section class="box-internal-hero">
+      <div class="box-hero-photo">
+        <img id="box-imagem-principal" class="box-hero-image" src="" alt="" />
+      </div>
+
+      <div class="box-hero-overlay">
+        <span class="box-hero-heart" aria-hidden="true">♡</span>
+
+        <!-- MÚSICA COMPACTA -->
+        <div class="box-internal-music">
+          <audio id="box-musica">
+            <source id="box-musica-source" src="" type="audio/mpeg" />
+            Seu navegador não suporta reprodução de áudio.
+          </audio>
+
+          <button
+            type="button"
+            class="music-play-button"
+            id="music-play-button"
+            aria-label="Reproduzir música"
+          >
+            ▶
+          </button>
+
+          <span class="box-internal-music-label">Nossa Música</span>
+        </div>
+
+        <div
+          class="box-info box-return-trigger"
+          role="link"
+          tabindex="0"
+          aria-label="Voltar para a Box"
+        >
+          <h1 id="box-nome">Mariazinha</h1>
+
+          <div class="box-event-line">
+            <span></span>
+            <p id="box-evento">15 anos</p>
+            <span></span>
+          </div>
+
+          <blockquote>
+            “Alguns momentos merecem durar mais que uma noite.”
+          </blockquote>
+
+          <span class="box-hero-small-heart" aria-hidden="true">♥</span>
+        </div>
+      </div>
+    </section>
+    <nav class="box-internal-nav" aria-label="Áreas da Box">
+      <a href="#" class="box-internal-nav-item is-active">
+        <img src="/assets/icons/Festa.png" alt="" />
+        <span>Festa</span>
+      </a>
+
+      <a href="#" class="box-internal-nav-item">
+        <img src="/assets/icons/Depoimento.png" alt="" />
+        <span>Depoimentos</span>
+      </a>
+
+      <a href="#" class="box-internal-nav-item">
+        <img src="/assets/icons/Memoria.png" alt="" />
+        <span>Memórias</span>
+      </a>
+
+      <a href="#" class="box-internal-nav-item">
+        <img src="/assets/icons/Pessoas.png" alt="" />
+        <span>Pessoas</span>
+      </a>
+    </nav>
+
     <main>
       <section class="album">
         <div class="album-header">
-          <h1>Álbum</h1>
-          <a id="box-return" class="box-return" href="#"> Mariazinha, 15 anos </a>
-        </div>
-        <div class="album-upload">
-          <label for="album-photo">Adicionar foto</label>
-          <p id="album-feedback"></p>
+          <div class="album-heading">
+            <h1>Fotos da festa</h1>
+            <p>Reviva os melhores momentos.</p>
+          </div>
 
-          <input id="album-photo" type="file" accept="image/*" />
+          <div class="album-upload">
+            <label for="album-photo">
+              <svg
+                class="album-upload-icon"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path d="M12 16V4" />
+                <path d="M7.5 8.5 12 4l4.5 4.5" />
+                <path
+                  d="M5 14v4.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V14"
+                />
+              </svg>
+
+              <span>Adicionar fotos</span>
+            </label>
+
+            <input id="album-photo" type="file" accept="image/*" />
+
+            <p id="album-feedback"></p>
+          </div>
+
+          <a
+            id="box-return"
+            class="box-return"
+            href="#"
+            aria-label="Voltar para a Box"
+          ></a>
         </div>
         <div class="album-grid"></div>
+        <!-- PESSOAS ESPECIAIS -->
+        <section class="box-participants album-participants">
+          <h2>
+            <span aria-hidden="true">♡</span>
+            Pessoas especiais nesta história
+          </h2>
+
+          <div class="participants-list" id="box-participants"></div>
+        </section>
       </section>
     </main>
     <footer class="footer">

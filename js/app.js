@@ -102,8 +102,10 @@ carregarFotos();
 
 const albumPhoto = document.querySelector("#album-photo");
 const albumFeedback = document.querySelector("#album-feedback");
+const albumUploadLabel = document.querySelector('.album-upload label');
+const albumUploadText = document.querySelector('.album-upload label span');
 
-if (albumPhoto && albumFeedback) {
+if (albumPhoto && albumFeedback && albumUploadLabel && albumUploadText) {
   albumPhoto.addEventListener("change", async function () {
     const arquivo = albumPhoto.files[0];
 
@@ -111,8 +113,9 @@ if (albumPhoto && albumFeedback) {
       return;
     }
 
-    albumFeedback.textContent = "Enviando foto...";
     albumPhoto.disabled = true;
+    albumUploadLabel.classList.add("is-loading");
+    albumUploadText.textContent = "Enviando...";
 
     try {
       const dados = new FormData();
@@ -128,18 +131,47 @@ if (albumPhoto && albumFeedback) {
       if (!resposta.ok) {
         albumFeedback.textContent =
           respostaDados.erro || "Não foi possível publicar a foto.";
+
+        albumUploadLabel.classList.remove("is-loading");
+        albumUploadLabel.classList.add("is-error");
+        albumUploadText.textContent = "Erro ao enviar";
+
+        setTimeout(() => {
+          albumUploadLabel.classList.remove("is-error");
+          albumUploadText.textContent = "Adicionar fotos";
+        }, 2000);
+
         return;
       }
 
       albumPhoto.value = "";
       await carregarFotos();
 
-      albumFeedback.textContent = "Foto publicada.";
+      albumFeedback.textContent = "";
+      albumUploadLabel.classList.remove("is-loading");
+      albumUploadLabel.classList.add("is-success");
+      albumUploadText.textContent = "✓ Foto adicionada";
+
+      setTimeout(() => {
+        albumUploadLabel.classList.remove("is-success");
+        albumUploadText.textContent = "Adicionar fotos";
+      }, 2000);
+
     } catch (erro) {
       console.error(erro);
 
       albumFeedback.textContent =
         "Não foi possível publicar a foto. Tente novamente.";
+
+      albumUploadLabel.classList.remove("is-loading");
+      albumUploadLabel.classList.add("is-error");
+      albumUploadText.textContent = "Erro ao enviar";
+
+      setTimeout(() => {
+        albumUploadLabel.classList.remove("is-error");
+        albumUploadText.textContent = "Adicionar fotos";
+      }, 2000);
+
     } finally {
       albumPhoto.disabled = false;
     }
@@ -667,5 +699,114 @@ if (boxAudio && musicPlayButton) {
   boxAudio.addEventListener("ended", () => {
     musicPlayButton.textContent = "▶";
     musicPlayButton.setAttribute("aria-label", "Reproduzir música");
+  });
+}
+
+// =========================
+// BOX INTERNA — HERO INTELIGENTE
+// =========================
+
+const boxInternalHero = document.querySelector(".box-internal-hero");
+const boxInternalNav = document.querySelector(".box-internal-nav");
+
+if (boxInternalHero && boxInternalNav) {
+  const ALTURA_HERO = 231;
+  const LIMIAR_DIRECAO = 12;
+
+  let ultimaPosicao = window.scrollY;
+  let direcaoAtual = null;
+  let movimentoDirecao = 0;
+  let heroRevelado = 0;
+
+  function atualizarHero() {
+    document.documentElement.style.setProperty(
+      "--box-internal-hero-reveal",
+      `${heroRevelado}px`
+    );
+  }
+
+  window.addEventListener(
+    "scroll",
+    function () {
+      const posicaoAtual = window.scrollY;
+      const delta = posicaoAtual - ultimaPosicao;
+
+      if (Math.abs(delta) < 1) {
+        ultimaPosicao = posicaoAtual;
+        return;
+      }
+
+      const novaDirecao = delta > 0 ? "baixo" : "cima";
+
+      if (novaDirecao !== direcaoAtual) {
+        direcaoAtual = novaDirecao;
+        movimentoDirecao = 0;
+      }
+
+      movimentoDirecao += Math.abs(delta);
+
+      /*
+       * Enquanto ainda estamos na região natural do hero,
+       * não interferimos em nada.
+       */
+      const heroJaPassou = posicaoAtual > ALTURA_HERO;
+
+      if (heroJaPassou && movimentoDirecao >= LIMIAR_DIRECAO) {
+        if (direcaoAtual === "cima") {
+          heroRevelado = Math.min(
+            ALTURA_HERO,
+            heroRevelado + Math.abs(delta)
+          );
+        }
+
+        if (direcaoAtual === "baixo") {
+          heroRevelado = Math.max(
+            0,
+            heroRevelado - Math.abs(delta)
+          );
+        }
+
+        atualizarHero();
+      }
+
+      /*
+       * Voltamos fisicamente para a região original:
+       * o comportamento natural assume novamente.
+       */
+      if (posicaoAtual <= ALTURA_HERO) {
+        heroRevelado = 0;
+        movimentoDirecao = 0;
+        atualizarHero();
+      }
+
+      ultimaPosicao = posicaoAtual;
+    },
+    { passive: true }
+  );
+}
+
+
+
+const boxReturnLink = document.getElementById("box-return");
+const boxReturnTriggers = document.querySelectorAll(".box-return-trigger");
+
+if (boxReturn && boxReturnTriggers.length) {
+  function voltarParaBox() {
+    const destino = boxReturn.getAttribute("href");
+
+    if (destino && destino !== "#") {
+      window.location.href = destino;
+    }
+  }
+
+  boxReturnTriggers.forEach((trigger) => {
+    trigger.addEventListener("click", voltarParaBox);
+
+    trigger.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        voltarParaBox();
+      }
+    });
   });
 }
