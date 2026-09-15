@@ -4,11 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="/css/style.css" />
-    <link rel="icon" type="image/png" href="/assets/icons/icon-192.png">
+    <link rel="icon" type="image/png" href="/assets/icons/icon-192.png" />
     <title>Click In Box</title>
   </head>
   <body>
-     <header>
+    <header>
       <a href="/" class="header-logo">
         <img src="/assets/logo/logo.png" alt="Click In Box" />
       </a>
@@ -17,14 +17,104 @@
         <button type="button" id="btn-login">Entrar</button>
       </div>
     </header>
+
+    <!-- HERO INTERNO DA BOX -->
+    <section class="box-internal-hero">
+      <div class="box-hero-photo">
+        <img id="box-imagem-principal" class="box-hero-image" src="" alt="" />
+      </div>
+
+      <div class="box-hero-overlay">
+        <span class="box-hero-heart" aria-hidden="true">♡</span>
+
+        <div class="box-internal-music">
+          <audio id="box-musica">
+            <source id="box-musica-source" src="" type="audio/mpeg" />
+            Seu navegador não suporta reprodução de áudio.
+          </audio>
+
+          <button
+            type="button"
+            class="music-play-button"
+            id="music-play-button"
+            aria-label="Reproduzir música"
+          >
+            ▶
+          </button>
+
+          <span class="box-internal-music-label">Nossa Música</span>
+        </div>
+
+        <div
+          class="box-info box-return-trigger"
+          role="link"
+          tabindex="0"
+          aria-label="Voltar para a Box"
+        >
+          <h1 id="box-nome">Mariazinha</h1>
+
+          <div class="box-event-line">
+            <span></span>
+            <p id="box-evento">15 anos</p>
+            <span></span>
+          </div>
+
+          <blockquote>
+            “Alguns momentos merecem durar mais que uma noite.”
+          </blockquote>
+
+          <span class="box-hero-small-heart" aria-hidden="true">♥</span>
+        </div>
+      </div>
+    </section>
+
+    <nav class="box-internal-nav" aria-label="Áreas da Box">
+      <a id="link-album" href="#" class="box-internal-nav-item">
+        <img src="/assets/icons/Festa.png" alt="" />
+        <span>Festa</span>
+      </a>
+
+      <a id="link-depoimentos" href="#" class="box-internal-nav-item">
+        <img src="/assets/icons/Depoimento.png" alt="" />
+        <span>Depoimentos</span>
+      </a>
+
+      <a id="link-memorias" href="#" class="box-internal-nav-item is-active">
+        <img src="/assets/icons/Memoria.png" alt="" />
+        <span>Memórias</span>
+      </a>
+
+      <a id="link-pessoas" href="#" class="box-internal-nav-item">
+        <img src="/assets/icons/Pessoas.png" alt="" />
+        <span>Pessoas</span>
+      </a>
+    </nav>
+
     <main>
       <section class="memories">
         <div class="memories-header">
-          <h1>Memórias</h1>
-          <a id="box-return" class="box-return" href="#"> Mariazinha, 15 anos </a>
+          <div class="memories-heading">
+            <h1>Memórias</h1>
+            <p>Nossas histórias</p>
+          </div>
+
+          <button
+            type="button"
+            class="memory-create-button"
+            id="memory-create-button"
+          >
+            Deixe uma memória
+          </button>
+
+          <a
+            id="box-return"
+            class="box-return"
+            href="#"
+            aria-label="Voltar para a Box"
+          ></a>
         </div>
 
-        <div class="memory-form">
+        <div class="memory-form" hidden>
           <label class="sr-only" for="memory-title"> Título da memória </label>
 
           <select id="memory-title" name="memory-title">
@@ -81,10 +171,14 @@
         </div>
         <div class="memories-list"></div>
       </section>
+
+      <!-- PESSOAS ESPECIAIS -->
+      <section class="box-participants">
+        <h2><span aria-hidden="true">♡</span>Pessoas especiais nesta história</h2>
+        <div class="participants-list" id="box-participants"></div>
+      </section>
     </main>
-    <footer class="footer">
-      <img src="/assets/logo/logo.png" alt="Click In Box" />
-    </footer>
+
     <script src="/js/app.js"></script>
   </body>
 </html>

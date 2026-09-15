@@ -1,0 +1,357 @@
+/* Sistema visual compartilhado das quatro gavetas internas. */
+
+/* =========================
+   FESTA — ELEMENTOS FIXOS NA ROLAGEM
+   ========================= */
+
+:root {
+  --album-header-height: calc(80px + env(safe-area-inset-top));
+}
+
+body:has(> .box-internal-hero) > header {
+  position: sticky;
+  top: 0;
+  z-index: 9999;
+  height: var(--album-header-height);
+  background-color: var(--box-cor-fundo, #f8eee4);
+  border-bottom: 1px solid rgba(214, 158, 116, 0.12);
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: 0;
+}
+
+/* =========================
+   HERO INTERNO DA BOX
+   Derivado do hero principal em ~70%
+   ========================= */
+
+.box-internal-hero {
+  position: relative;
+  min-height: 231px; /* 330 × 0.70 */
+  overflow: hidden;
+  border: none;
+  border-radius: 0 0 20px 20px; /* 28 × 0.70 */
+  background: var(--box-cor-card);
+  box-shadow: none;
+  margin-bottom: 0;
+}
+
+/* Foto — mantém a composição estrutural do hero principal */
+.box-internal-hero .box-hero-photo {
+  position: absolute;
+  top: 0;
+  left: 14px;
+
+  width: 43.4%;
+  height: 231px;
+
+  overflow: hidden;
+
+  -webkit-mask-image: url("/assets/mask/mask-brush.png");
+  -webkit-mask-size: 100% 100%;
+  -webkit-mask-position: center;
+  -webkit-mask-repeat: no-repeat;
+
+  mask-image: url("/assets/mask/mask-brush.png");
+  mask-size: 100% 100%;
+  mask-position: center;
+  mask-repeat: no-repeat;
+}
+.box-internal-hero .box-hero-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+
+  /* primeiro ajuste óptico:
+     menos zoom que o hero principal */
+  transform: translate(-21px, -21px) scale(1);
+ 
+}
+
+/* Área de informação */
+.box-internal-hero .box-hero-overlay {
+  position: relative;
+  z-index: 2;
+
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+
+  min-height: 231px;
+
+  /* 24 → 17 | 22 → 15
+     os 48% permanecem estruturais */
+  padding: 17px 15px 17px 48%;
+  box-sizing: border-box;
+}
+
+.box-internal-hero .box-info {
+  width: 100%;
+  text-align: center;
+  transform: translateX(-10px) scale(1.06);
+  transform-origin: center;
+}
+
+/* Nome */
+.box-internal-hero .box-info h1 {
+  font-family: "Parisienne", cursive;
+  font-style: italic;
+  font-weight: 500;
+}
+
+.box-internal-hero #box-nome span {
+  display: block;
+  color: #c76122;
+}
+
+.box-internal-hero #box-nome .nome-linha-1,
+.box-internal-hero #box-nome .nome-linha-2 {
+  margin-top: -8px; /* -10 × 0.70 */
+  margin-bottom: 0;
+}
+
+.box-internal-hero #box-nome .nome-linha-1 {
+  transform: translateX(-11px); /* -15 × 0.70 */
+}
+
+.box-internal-hero #box-nome .nome-linha-2 {
+  transform: translateX(21px); /* 30 × 0.70 */
+}
+
+/* Evento */
+.box-internal-hero .box-event-line {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px; /* 10 × 0.70 */
+  margin-bottom: 10px; /* 22 × 0.70 */
+}
+
+.box-internal-hero .box-event-line span {
+  width: 20px; /* 28 × 0.70 */
+  height: 1px;
+  background: var(--box-cor-rosa-suave);
+  opacity: 0.7;
+}
+
+.box-internal-hero .box-event-line p {
+  margin: 0;
+  color: var(--box-cor-rosa-suave);
+  font-family: "Libre Baskerville", serif;
+  font-size: 8px; /* 11 × 0.70 ≈ 7.7 */
+  letter-spacing: 2.1px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  font-weight: 700;
+}
+
+/* Citação */
+.box-internal-hero .box-info blockquote {
+  margin: 0;
+  padding: 0 3px;
+
+  font-family: "Libre Baskerville", Georgia, serif;
+  font-size: 9px; /* 13 × 0.70 */
+  line-height: 1.55;
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: 0.1px;
+
+  color: #6f5a4d;
+}
+
+/* Coração grande */
+.box-internal-hero .box-hero-heart {
+  position: absolute;
+  top: 28px; /* 40 × 0.70 */
+  right: 26px; /* 28 × 0.70 */
+
+  color: var(--box-cor-laranja-suave);
+  font-family: Georgia, serif;
+  font-size: 29px; /* 42 × 0.70 */
+  line-height: 1;
+
+  transform: rotate(-12deg);
+  opacity: 0.9;
+}
+
+/* Coração pequeno */
+.box-internal-hero .box-hero-small-heart {
+  display: block;
+  margin-top: 6px; /* 22 × 0.70 */
+  transform: translateY(-2px);
+  color: var(--box-cor-rosa);
+  font-size: 11px; /* 15 × 0.70 */
+}
+
+/* =========================
+   PLAYER COMPACTO — HERO INTERNO
+   ========================= */
+
+.box-internal-music {
+  position: absolute;
+  z-index: 4;
+
+  top: 4px;
+  right: auto;
+  left: 165px;
+
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.box-internal-music audio {
+  display: none;
+}
+
+.box-internal-music .music-play-button {
+  display: grid;
+  place-items: center;
+
+  width: auto;
+  height: auto;
+  padding: 0;
+
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+
+  color: #6f5a4d;
+
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+
+  box-shadow: none;
+}
+
+.box-internal-music .music-play-button:active {
+  opacity: 0.6;
+}
+
+.box-internal-music-label {
+  font-family: "Libre Baskerville", Georgia, serif;
+  font-size: 8px;
+  font-weight: 700;
+  color: #6f5a4d;
+  white-space: nowrap;
+}
+
+/* =========================
+        ICONES GAVETAS
+   ========================= */
+
+.box-internal-nav {
+  position: sticky;
+  top: var(--album-header-height);
+  z-index: 9000;
+
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  align-items: center;
+
+  margin: -21px 36px 12px;
+  padding: 1px 6px 3px;
+
+  background: #fffaf4;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 14px;
+
+  box-shadow:
+    0 3px 10px rgba(92, 60, 39, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.65);
+}
+.box-internal-nav-item {
+  position: relative;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+
+  padding: 1px 1px 4px;
+
+  color: #8a7668;
+  text-decoration: none;
+}
+
+.box-internal-nav-item img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+
+  opacity: 0.82;
+
+  filter: drop-shadow(0 0 0.35px currentColor);
+}
+
+.box-internal-nav-item span {
+  font-family: "Libre Baskerville", Georgia, serif;
+  font-size: 9px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.box-internal-nav-item.is-active {
+  color: #b67b3c;
+}
+
+.box-internal-nav-item.is-active img {
+  opacity: 1;
+}
+
+.box-internal-nav-item.is-active::after {
+  content: "";
+
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+
+  width: 26px;
+  height: 1px;
+
+  background: #b67b3c;
+
+  transform: translateX(-50%);
+}
+
+/* =========================
+   BOX INTERNA — CAMADAS DE NAVEGAÇÃO
+   ========================= */
+
+:root {
+  --box-internal-hero-height: 231px;
+  --box-internal-hero-reveal: 0px;
+  --box-internal-nav-overlap: 21px;
+}
+
+.box-internal-hero {
+  position: sticky;
+  top: calc(
+    var(--album-header-height) - var(--box-internal-hero-height)
+  );
+  z-index: 8500;
+
+  transform: translateY(var(--box-internal-hero-reveal));
+}
+
+.box-internal-nav {
+  z-index: 9000;
+
+  top: calc(
+    var(--album-header-height) -
+    min(var(--box-internal-hero-reveal), var(--box-internal-nav-overlap))
+  );
+
+  transform: translateY(var(--box-internal-hero-reveal));
+}
+
+body:has(> .box-internal-hero) > header {
+  z-index: 9999;
+}
+
+.box-return-trigger {
+  cursor: pointer;
+}

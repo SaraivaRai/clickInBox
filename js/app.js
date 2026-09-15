@@ -14,6 +14,32 @@ if (memoryTitle) {
   });
 }
 
+// =========================
+// MEMÓRIAS — ABRIR ESCRITA
+// =========================
+
+const memoryCreateButton = document.querySelector("#memory-create-button");
+const memoryForm = document.querySelector(".memory-form");
+
+if (memoryCreateButton && memoryForm) {
+  memoryCreateButton.addEventListener("click", function () {
+    memoryForm.hidden = false;
+    memoryCreateButton.hidden = true;
+
+    document.body.classList.add("memory-writing");
+
+    document.documentElement.style.setProperty(
+      "--box-internal-hero-reveal",
+      "0px"
+    );
+
+    memoryForm.scrollIntoView({
+      behavior: "smooth",
+      block: "center"
+    });
+  });
+}
+
 const partesUrl = window.location.pathname.split("/");
 const boxId = partesUrl[1] === "boxes" ? partesUrl[2] : null;
 
@@ -774,7 +800,7 @@ if (boxInternalHero && boxInternalNav) {
        * o comportamento natural assume novamente.
        */
       if (posicaoAtual <= ALTURA_HERO) {
-        heroRevelado = 0;
+        heroRevelado = Math.min(heroRevelado, Math.max(0, posicaoAtual));
         movimentoDirecao = 0;
         atualizarHero();
       }
@@ -785,14 +811,12 @@ if (boxInternalHero && boxInternalNav) {
   );
 }
 
-
-
 const boxReturnLink = document.getElementById("box-return");
 const boxReturnTriggers = document.querySelectorAll(".box-return-trigger");
 
-if (boxReturn && boxReturnTriggers.length) {
+if (boxReturnLink && boxReturnTriggers.length) {
   function voltarParaBox() {
-    const destino = boxReturn.getAttribute("href");
+    const destino = boxReturnLink.getAttribute("href");
 
     if (destino && destino !== "#") {
       window.location.href = destino;

@@ -235,3 +235,75 @@
         margin: 0 auto;
     }
 }
+
+/* =========================
+   MEMÓRIAS — CABEÇALHO
+   ========================= */
+
+.memories {
+  padding: 0 18px calc(150px + env(safe-area-inset-bottom));
+}
+
+.memories-header {
+  position: relative;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+
+  margin-top: 15px;
+  margin-bottom: -3px;
+  transform: translateY(-10px);
+}
+
+.memories-heading h1 {
+  margin: 0 0 3px;
+
+  font-family: "Libre Baskerville", Georgia, serif;
+  font-size: 18px;
+  font-weight: 700;
+
+  color: var(--box-cor-texto);
+}
+
+.memories-heading p {
+  margin: 0;
+
+  font-size: 9px;
+  line-height: 1.4;
+
+  color: var(--box-cor-texto-suave);
+}
+
+.memory-create-button {
+  flex-shrink: 0;
+  transform: translateY(0);
+
+  width: 120px;
+  box-sizing: border-box;
+
+  padding: 11px 12px;
+
+  border: 1px solid rgba(182, 123, 60, 0.72);
+  border-radius: 999px;
+
+  background: transparent;
+
+  color: #9d672f;
+
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+
+  cursor: pointer;
+}
+
+body.memory-writing > .box-internal-hero {
+  display: none !important;
+}
+
+body.memory-writing .memories-header {
+  margin-top: 20px;
+  transform: translateY(0);
+}

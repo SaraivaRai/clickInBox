@@ -2,6 +2,8 @@
 @import url('./header.css');
 @import url('./home.css');
 @import url('./box.css');
+@import url('./box-internal.css');
+@import url('./box-people.css');
 @import url('./profile.css');
 @import url('./album.css');
 @import url('./testimonials.css');

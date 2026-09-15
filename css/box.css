@@ -555,135 +555,6 @@
 }
 
 /* =========================
-   PARTICIPANTES
-   ========================= */
-
-.box-page .box-participants {
-  margin-top: 12px;
-  padding: 0 25px;
-}
-
-.box-page .box-participants h2 {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin: 0 0 10px;
-
-  font-family: 'Cormorant Garamond', Georgia, serif;
-  font-size: 15px;
-  font-weight: 500;
-  letter-spacing: 0.2px;
-  text-transform: none;
-
-  color: #6a574b;
-  opacity: 1;
-}
-
-.box-page .box-participants h2 span {
-  color: #b78632;
-  font-size: 12px;
-  line-height: 1;
-}
-
-.box-page .participants-list {
-  display: flex;
-  gap: 9px;
-  overflow: hidden;
-  padding: 2px 1px 6px;
-}
-
-.box-page .participants-list::-webkit-scrollbar {
-  display: none;
-}
-
-.box-page .participant {
-  display: flex;
-  flex-direction: column;
-  align-items: center;  
-  text-align: center;
-}
-
-.box-page .participant img {
-  display: block;
-  width: 48px;
-  height: 48px;
-  margin: 0 auto 5px;
-  object-fit: cover;
-
-  border: 1px solid rgba(190, 145, 82, 0.28);
-  border-radius: 50%;
-
-  box-shadow:
-    0 2px 6px rgba(82, 51, 32, 0.08),
-    0 0 0 2px rgba(255, 255, 255, 0.55);
-}
-
-.box-page .participant-info {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-  width: 100%;
-  min-width: 0; /* Permite o text-overflow funcionar */
-}
-
-.box-page .participant-info h3 {
-  margin: 0;
-  width: 100%;
-  overflow: hidden;
-  color: var(--box-cor-texto);
-  font-family: 'Montserrat', 'Helvetica Neue', sans-serif;
-  font-size: 9px;
-  font-weight: 500;
-  letter-spacing: 0.1px;
-  line-height: 1.2;
-  text-align: center;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.box-page .participant-info span {
-  display: inline-block;
-  padding: 2px 6px;
-
-  font-family: 'Montserrat', 'Helvetica Neue', sans-serif;
-  font-size: 7px;
-  font-weight: 600;
-  letter-spacing: 0.25px;
-  text-transform: uppercase;
-
-  border-radius: 999px;
-  line-height: 1.2;
-
-  background: rgba(184, 137, 63, 0.22);
-  color: #8d682e;
-}
-
-.box-page .participant-info .tag-protagonista {
-  background: rgba(201, 120, 67, 0.22);
-  color: #a75d31;
-}
-
-.box-page .participant-info .tag-convidado {
-  background: rgba(143, 174, 149, 0.27);
-  color: #64806a;
-}
-
-.box-page .participant-info .tag-coautora {
-  background: rgba(169, 131, 182, 0.22);
-  color: #82648d;
-}
-
-.box-page .participant-info .tag-pai {
-  background: rgba(111, 135, 147, 0.27);
-  color: #536c78;
-}
-
-.box-page .participant-info .tag-mae {
-  background: rgba(185, 120, 142, 0.17);
-  color: #945c70;
-}
-/* =========================
    RESPONSIVIDADE
    ========================= */
 
@@ -704,8 +575,7 @@
   }
 
   .box-manifesto,
-  .box-gavetas,
-  .box-page .box-participants {
+  .box-gavetas {
     padding: 0; /* Remove o padding extra (o .box-main já cuida) */
   }
 
