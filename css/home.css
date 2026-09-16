@@ -1,132 +1,228 @@
-/* =========================
-   Home
-========================= */
-
-/* Hero */
+/* Home — Piloto 0.1 */
+body:has(.hero) {
+  min-height: 100vh;
+  color: #211d19;
+  background:
+    radial-gradient(
+      ellipse at 78% 20%,
+      rgba(255, 255, 255, 0.94) 0%,
+      rgba(255, 244, 219, 0.72) 18%,
+      rgba(241, 199, 132, 0.16) 42%,
+      transparent 66%
+    ),
+    linear-gradient(145deg, #fffaf4 0%, #f8efe2 58%, #f5eadb 100%);
+}
+body:has(.hero) > header {
+  position: relative;
+  z-index: 5;
+  min-height: 68px;
+  padding: 12px 22px;
+  background: transparent;
+}
+body:has(.hero) .header-logo {
+  display: none;
+}
+body:has(.hero) .header-account {
+  margin-left: auto;
+}
+body:has(.hero) #btn-login {
+  padding: 8px 14px;
+  border: 1px solid rgba(180, 119, 48, 0.38);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.45);
+  color: #845626;
+  font:
+    600 11px/1 Montserrat,
+    Arial,
+    sans-serif;
+}
+body:has(.hero) .header-profile-photo {
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(180, 119, 48, 0.32);
+  box-shadow: 0 4px 14px rgba(76, 49, 26, 0.1);
+}
 
 .hero {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    max-width: 1200px;
-    margin: 60px auto 0;
-    padding: 0 24px;
+  position: relative;
+  width: min(100%, 1080px);
+  min-height: 340px;
+  margin: 0 auto;
+  padding: 48px 22px 0;
 }
-
+.hero-logo {
+  display: block;
+  width: min(62vw, 280px);
+  height: auto;
+  margin: 0 auto;
+}
 .hero h1 {
-    min-width: 400px;
-    font-family: Georgia, serif;
-    font-size: 48px;
-    line-height: 1.1;
-    font-weight: normal;
+  position: absolute;
+  z-index: 2;
+  left: 7%;
+  top: 148px;
+  width: 50%;
+  margin: 0;
+  font-family: "Libre Baskerville", Georgia, serif;
+  font-size: clamp(20px, 6vw, 30px);
+  line-height: 1.27;
+  font-weight: 400;
+  letter-spacing: -0.035em;
 }
-
 .hero h1 span {
-    color: #c89b3c;
-    font-family: Georgia, serif;
-    font-weight: normal;
+  display: block;
+  margin-top: 1px;
+  color: #dc811a;
+  font-family: "Libre Baskerville", Georgia, serif;
+  font-size: 1em;
+  line-height: 1.05;
+  font-weight: 400;
+  letter-spacing: 0;
 }
-
-.hero-photos {
-    display: flex;
-    align-items: flex-start;
+.hero-box {
+  position: absolute;
+  z-index: 1;
+  top: 108px;
+  right: -6%;
+  width: 68%;
+  pointer-events: none;
 }
-
-.polaroid {
-    background-color: #ffffff;
-    padding: 10px 10px 30px;
-    box-shadow: 0 4px 10px #00000033;
-    position: relative;
+.hero-box img {
+  display: block;
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 16px 18px rgba(108, 69, 31, 0.11));
 }
-
-.polaroid + .polaroid {
-    margin-left: -30px;
-}
-
-.polaroid img {
-    width: 180px;
-    height: 180px;
-    display: block;
-}
-
-.polaroid:nth-child(1) {
-    transform: rotate(-4deg);
-    z-index: 1;
-}
-
-.polaroid:nth-child(2) {
-    transform: rotate(3deg);
-    z-index: 4;
-}
-
-.polaroid:nth-child(3) {
-    transform: rotate(-2deg);
-    z-index: 3;
-}
-
-.polaroid:nth-child(4) {
-    transform: rotate(4deg);
-    z-index: 2;
-}
-
-
-/* Histórias */
 
 .stories {
-    max-width: 1200px;
-    margin: 60px auto 0;
+  width: min(100%, 960px);
+  margin: 0 auto;
+  padding: 0 18px 72px;
 }
-
 .stories h2 {
-    font-family: "Allura", cursive;
-    font-size: 32px;
-    text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin: 0 0 34px;
+  font-family: "Libre Baskerville", Georgia, serif;
+  font-size: 23px;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-align: center;
 }
-
-.stories-subtitle {
-    text-align: center;
+.stories h2::before,
+.stories h2::after {
+  content: "";
+  width: min(20vw, 72px);
+  height: 3px;
+  background: #e0a04c;
 }
-
 .stories-list {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 60px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 8px;
+  width: 100%;
 }
-
 .stories-list article {
-    width: 280px;
-    border: 1px solid #d8d2c8;
-    border-radius: 8px;
-    background-color: #ffffff;
-    padding: 12px;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.84);
+  border-radius: 15px;
+  background: rgba(255, 251, 246, 0.66);
+  box-shadow: 0 7px 18px rgba(89, 58, 31, 0.08);
 }
-
 .stories-list a {
-    text-decoration: none;
-    color: inherit;
-    display: flex;
-    gap: 16px;
-    align-items: center;
+  display: grid;
+  grid-template-columns: minmax(0, 46%) minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-height: 102px;
+  padding: 8px;
+  color: inherit;
+  text-decoration: none;
 }
-
 .stories-list article img {
-    width: 160px;
-    height: 120px;
+  display: block;
+  width: 100%;
+  aspect-ratio: 1/1;
+  object-fit: cover;
+  border-radius: 9px;
+  box-shadow: 0 3px 9px rgba(67, 40, 20, 0.16);
 }
-
 .story-info {
-    flex: 1;
-    text-align: center;
+  min-width: 0;
+  text-align: left;
 }
-
 .story-info h3 {
-    margin: 0 0 6px;
-    font-size: 18px;
+  overflow-wrap: anywhere;
+  margin: 0 0 6px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid rgba(193, 137, 74, 0.2);
+  font-family: "Libre Baskerville", Georgia, serif;
+  font-size: clamp(10px, 2.9vw, 13px);
+  line-height: 1.18;
+  font-weight: 700;
 }
-
 .story-info p {
-    margin: 0;
-    font-size: 14px;
+  margin: 0;
+  color: #5e5851;
+  font-family: Montserrat, Arial, sans-serif;
+  font-size: clamp(8px, 2.35vw, 10px);
+  line-height: 1.25;
 }
 
+@media (max-width: 359px) {
+  .hero {
+    min-height: 316px;
+    padding-inline: 16px;
+  }
+  .hero h1 {
+    top: 143px;
+    left: 6%;
+    width: 50%;
+    font-size: 19px;
+  }
+  .hero-box {
+    top: 113px;
+    right: 0;
+    width: 68%;
+  }
+  .stories {
+    padding-inline: 12px;
+  }
+  .stories-list {
+    gap: 8px 6px;
+  }
+  .stories-list a {
+    min-height: 92px;
+    padding: 7px;
+    gap: 6px;
+  }
+}
 
+@media (min-width: 600px) {
+  .hero {
+    min-height: 455px;
+    padding-top: 58px;
+  }
+  .hero h1 {
+    top: 190px;
+    left: 10%;
+    width: 38%;
+  }
+  .hero-box {
+    top: 135px;
+    right: 5%;
+    width: 53%;
+  }
+  .stories-list {
+    gap: 16px;
+  }
+  .stories-list a {
+    min-height: 142px;
+    padding: 12px;
+    gap: 14px;
+  }
+}
