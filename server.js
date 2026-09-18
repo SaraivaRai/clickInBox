@@ -4,6 +4,7 @@ const { OAuth2Client } = require("google-auth-library");
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const fs = require("fs");
 const path = require("path");
+const sharp = require("sharp");
 
 const express = require("express");
 const { Pool } = require("pg");
@@ -14,7 +15,7 @@ const DIAS_DEPOIS_ESCRITA = 5;
 const upload = multer({
   dest: "uploads/",
   limits: {
-    fileSize: 10 * 1024 * 1024,
+    fileSize: 30 * 1024 * 1024,
   },
   fileFilter: function (req, file, cb) {
     if (file.mimetype.startsWith("image/")) {
@@ -25,6 +26,27 @@ const upload = multer({
   },
 });
 
+async function processarImagem(caminhoOriginal) {
+  const caminhoFinal = caminhoOriginal + ".jpg";
+
+  await sharp(caminhoOriginal)
+    .rotate()
+    .resize({
+      width: 2000,
+      height: 2000,
+      fit: "inside",
+      withoutEnlargement: true,
+    })
+    .jpeg({
+      quality: 82,
+      mozjpeg: true,
+    })
+    .toFile(caminhoFinal);
+
+  fs.unlinkSync(caminhoOriginal);
+
+  return caminhoFinal;
+}
 const app = express();
 
 app.set("trust proxy", 1);
@@ -344,6 +366,33 @@ app.get(
   },
 );
 
+app.get("/api/boxes/:boxId/participantes", async function (req, res) {
+  const boxId = req.params.boxId;
+
+  try {
+    const resultado = await pool.query(
+      `SELECT usuarios.nome,
+              usuarios.foto_perfil,
+              usuarios_boxes.papel
+       FROM usuarios
+       JOIN usuarios_boxes
+         ON usuarios.id = usuarios_boxes.usuario_id
+       WHERE usuarios_boxes.box_id = $1
+         AND usuarios_boxes.papel IN ('protagonista', 'mae', 'pai', 'coautora')
+       ORDER BY usuarios.nome ASC`,
+      [boxId],
+    );
+
+    res.json(resultado.rows);
+  } catch (erro) {
+    console.error(erro);
+
+    res.status(500).json({
+      erro: "Erro interno do servidor",
+    });
+  }
+});
+
 app.get(
   "/api/boxes/:boxId/depoimentos",
   autenticarUsuario,
@@ -661,10 +710,8 @@ app.post(
               erro: "O arquivo enviado não é uma imagem válida",
             });
           }
+          const novoCaminho = await processarImagem(arquivo.path);
 
-          const novoCaminho = arquivo.path + "." + tipoReal.ext;
-
-          fs.renameSync(arquivo.path, novoCaminho);
           arquivo.path = novoCaminho;
           caminhoFoto = novoCaminho;
         }
@@ -765,9 +812,8 @@ app.post(
           });
         }
 
-        const novoCaminho = arquivo.path + "." + tipoReal.ext;
+        const novoCaminho = await processarImagem(arquivo.path);
 
-        fs.renameSync(arquivo.path, novoCaminho);
         arquivo.path = novoCaminho;
 
         const resultado = await pool.query(

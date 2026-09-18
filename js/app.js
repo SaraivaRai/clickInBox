@@ -313,7 +313,9 @@ if (testimonialSubmit && testimonialText && testimonialFeedback) {
   });
 }
 
-const testimonialCreateButton = document.querySelector("#testimonial-create-button");
+const testimonialCreateButton = document.querySelector(
+  "#testimonial-create-button",
+);
 const testimonialForm = document.querySelector(".testimonial-form");
 
 if (testimonialCreateButton && testimonialForm) {
@@ -325,12 +327,12 @@ if (testimonialCreateButton && testimonialForm) {
 
     document.documentElement.style.setProperty(
       "--box-internal-hero-reveal",
-      "0px"
+      "0px",
     );
 
     testimonialForm.scrollIntoView({
       behavior: "smooth",
-      block: "center"
+      block: "center",
     });
   });
 }
@@ -527,9 +529,17 @@ async function carregarPessoas() {
     const fallback = document.createElement("div");
     fallback.className = `${classe} person-avatar-fallback`;
     fallback.setAttribute("role", "img");
-    fallback.setAttribute("aria-label", `${pessoa.nome} não possui foto de perfil`);
-    fallback.textContent = pessoa.nome.trim().split(/\s+/).slice(0, 2)
-      .map((parte) => parte.charAt(0)).join("").toUpperCase();
+    fallback.setAttribute(
+      "aria-label",
+      `${pessoa.nome} não possui foto de perfil`,
+    );
+    fallback.textContent = pessoa.nome
+      .trim()
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((parte) => parte.charAt(0))
+      .join("")
+      .toUpperCase();
     return fallback;
   };
 
@@ -544,12 +554,16 @@ async function carregarPessoas() {
   const resposta = await fetch(`/api/boxes/${boxId}/usuarios`);
   const pessoas = await resposta.json();
   const peopleProtagonist = document.querySelector("#people-protagonist");
-  const protagonista = pessoas.find((pessoa) => pessoa.papel === "protagonista");
+  const protagonista = pessoas.find(
+    (pessoa) => pessoa.papel === "protagonista",
+  );
 
   if (peopleProtagonist) peopleProtagonist.innerHTML = "";
 
   if (peopleProtagonist && protagonista) {
-    peopleProtagonist.appendChild(criarAvatar(protagonista, "people-protagonist-avatar"));
+    peopleProtagonist.appendChild(
+      criarAvatar(protagonista, "people-protagonist-avatar"),
+    );
     const info = document.createElement("div");
     info.classList.add("people-protagonist-info");
     const nome = document.createElement("h2");
@@ -560,17 +574,19 @@ async function carregarPessoas() {
     peopleProtagonist.appendChild(info);
   }
 
-  pessoas.filter((pessoa) => pessoa.papel !== "protagonista").forEach((pessoa) => {
-    const article = document.createElement("article");
-    article.classList.add("person");
-    article.appendChild(criarAvatar(pessoa, "person-avatar"));
-    const nome = document.createElement("h3");
-    nome.textContent = pessoa.nome.trim();
-    nome.title = pessoa.nome.trim();
-    article.appendChild(nome);
-    article.appendChild(criarTagPapel(pessoa.papel));
-    peopleList.appendChild(article);
-  });
+  pessoas
+    .filter((pessoa) => pessoa.papel !== "protagonista")
+    .forEach((pessoa) => {
+      const article = document.createElement("article");
+      article.classList.add("person");
+      article.appendChild(criarAvatar(pessoa, "person-avatar"));
+      const nome = document.createElement("h3");
+      nome.textContent = pessoa.nome.trim();
+      nome.title = pessoa.nome.trim();
+      article.appendChild(nome);
+      article.appendChild(criarTagPapel(pessoa.papel));
+      peopleList.appendChild(article);
+    });
 }
 
 carregarPessoas();
@@ -581,7 +597,7 @@ async function carregarParticipantes() {
   const lista = document.querySelector("#box-participants");
   if (!lista) return;
 
-  const resposta = await fetch(`/api/boxes/${boxId}/usuarios`);
+  const resposta = await fetch(`/api/boxes/${boxId}/participantes`);
   const usuarios = await resposta.json();
   const protagonista = usuarios.find(
     (usuario) => usuario.papel === "protagonista",
@@ -741,11 +757,136 @@ async function carregarContaHeader() {
 
 carregarContaHeader();
 
+let loginDestino = null;
+
+function criarLoginOverlay() {
+  let overlay = document.getElementById("login-overlay");
+
+  if (overlay) {
+    return overlay;
+  }
+
+  overlay = document.createElement("div");
+  overlay.id = "login-overlay";
+  overlay.hidden = true;
+
+  overlay.innerHTML = `
+    <div class="login-overlay-panel">
+      <button
+        type="button"
+        id="login-overlay-close"
+        aria-label="Fechar"
+      >
+        ×
+      </button>
+
+      <img
+        src="/assets/logo/logo.png"
+        alt="Click In Box"
+        class="login-overlay-logo"
+      />
+
+      <h2>Entre para continuar</h2>
+
+      <div id="google-login-button"></div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  const fechar = overlay.querySelector("#login-overlay-close");
+
+  fechar.addEventListener("click", function () {
+    overlay.hidden = true;
+    loginDestino = null;
+  });
+
+  return overlay;
+}
+
+function carregarGoogleLogin() {
+  return new Promise((resolve) => {
+    if (window.google?.accounts?.id) {
+      resolve();
+      return;
+    }
+
+    const scriptExistente = document.querySelector(
+      'script[src="https://accounts.google.com/gsi/client"]',
+    );
+
+    if (scriptExistente) {
+      scriptExistente.addEventListener("load", resolve, { once: true });
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.onload = resolve;
+
+    document.head.appendChild(script);
+  });
+}
+
+async function abrirLoginOverlay(destino = null) {
+  const overlay = criarLoginOverlay();
+
+  loginDestino = destino;
+  overlay.hidden = false;
+
+  await carregarGoogleLogin();
+
+  google.accounts.id.initialize({
+    client_id:
+      "699415164315-cv5d4hbqoirdbnkeo04kdbmk7vi8vuj0.apps.googleusercontent.com",
+    callback: handleGoogleCredential,
+  });
+
+  const container = document.getElementById("google-login-button");
+  container.innerHTML = "";
+
+  google.accounts.id.renderButton(container, {
+    type: "standard",
+    theme: "outline",
+    size: "large",
+  });
+}
+
+async function handleGoogleCredential(response) {
+  const resposta = await fetch("/api/auth/google", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      credential: response.credential,
+    }),
+  });
+
+  if (!resposta.ok) {
+    return;
+  }
+
+  if (loginDestino) {
+    window.location.href = loginDestino;
+    return;
+  }
+
+  const overlay = document.getElementById("login-overlay");
+
+  if (overlay) {
+    overlay.hidden = true;
+  }
+
+  await carregarContaHeader();
+}
+
 const botaoLogin = document.getElementById("btn-login");
 
 if (botaoLogin) {
   botaoLogin.addEventListener("click", function () {
-    window.location.href = "/login.html?retorno=/";
+    abrirLoginOverlay();
   });
 }
 
