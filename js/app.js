@@ -299,8 +299,10 @@ if (testimonialSubmit && testimonialText && testimonialFeedback) {
       testimonialText.value = "";
       await carregarDepoimentos();
 
-      testimonialSubmit.textContent = "✓ Publicado";
+      testimonialSubmit.textContent = "✓ Depoimento publicado";
+      testimonialSubmit.disabled = false;
       testimonialFeedback.textContent = "";
+      
     } catch (erro) {
       console.error(erro);
 
@@ -316,6 +318,13 @@ if (testimonialSubmit && testimonialText && testimonialFeedback) {
 const testimonialCreateButton = document.querySelector(
   "#testimonial-create-button",
 );
+
+testimonialText.addEventListener("input", function () {
+  if (testimonialSubmit.textContent === "✓ Depoimento publicado") {
+    testimonialSubmit.textContent = "Enviar depoimento";
+  }
+});
+
 const testimonialForm = document.querySelector(".testimonial-form");
 
 if (testimonialCreateButton && testimonialForm) {
@@ -500,11 +509,50 @@ if (memorySubmit && memoryTitle && memoryText && memoryFeedback) {
       customTitle.value = "";
       customTitle.style.display = "none";
 
+      memoryFileInput.value = "";
+
+      const memoryFileLabel = document.querySelector(
+        'label[for="memory-file"]',
+      );
+
+      if (memoryFileLabel) {
+        memoryFileLabel.textContent = "▧  Adicionar foto";
+        memoryFileLabel.classList.remove("has-photo");
+      }
+
+      memoryFileFeedback.textContent = "";
+
       await carregarMemorias();
 
-      memoryFeedback.textContent = "Memória publicada.";
+      memoryFeedback.textContent = "";
+      memorySubmit.textContent = "✓ Memória publicada";
+      memorySubmit.disabled = false;
+
+      function prepararNovaMemoria() {
+        if (
+          memorySubmit &&
+          memorySubmit.textContent === "✓ Memória publicada"
+        ) {
+          memorySubmit.textContent = "Compartilhar memória";
+        }
+      }
+
+      if (memoryTitle) {
+        memoryTitle.addEventListener("change", prepararNovaMemoria);
+      }
+
+      if (memoryText) {
+        memoryText.addEventListener("input", prepararNovaMemoria);
+      }
+
+      if (memoryFileInput) {
+        memoryFileInput.addEventListener("change", prepararNovaMemoria);
+      }
     } catch (erro) {
       console.error(erro);
+
+      memorySubmit.textContent = "Compartilhar memória";
+      memorySubmit.disabled = false;
 
       memoryFeedback.textContent =
         "Não foi possível publicar a memória. Tente novamente.";
