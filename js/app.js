@@ -890,6 +890,29 @@ if (botaoLogin) {
   });
 }
 
+const gavetasPrivadas = [
+  linkAlbum,
+  linkDepoimentos,
+  linkMemorias,
+  linkPessoas,
+].filter(Boolean);
+
+gavetasPrivadas.forEach((gaveta) => {
+  gaveta.addEventListener("click", async function (event) {
+    event.preventDefault();
+
+    const destino = gaveta.href;
+    const resposta = await fetch("/api/auth/me");
+
+    if (resposta.ok) {
+      window.location.href = destino;
+      return;
+    }
+
+    abrirLoginOverlay(destino);
+  });
+});
+
 const boxAudio = document.getElementById("box-musica");
 const musicPlayButton = document.getElementById("music-play-button");
 
