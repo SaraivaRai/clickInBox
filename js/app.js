@@ -713,7 +713,7 @@ if (botaoLogout) {
       method: "POST",
     });
 
-    window.location.href = "/login.html";
+    window.location.href = "/";
   });
 }
 async function carregarContaHeader() {
