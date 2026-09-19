@@ -1,3 +1,5 @@
+function initializeBoxPage() {
+const pageEvents = new AbortController();
 const memoryTitle = document.querySelector("#memory-title");
 
 if (memoryTitle) {
@@ -90,8 +92,10 @@ async function carregarBox() {
     boxImagemPrincipal.alt = `${box.nome} - ${box.evento}`;
   }
   if (boxMusica && boxMusicaSource) {
-    boxMusicaSource.src = box.musica;
-    boxMusica.load();
+    if (boxMusicaSource.getAttribute("src") !== box.musica) {
+      boxMusicaSource.src = box.musica;
+      boxMusica.load();
+    }
   }
 }
 
@@ -919,7 +923,14 @@ async function handleGoogleCredential(response) {
   }
 
   if (loginDestino) {
-    window.location.href = loginDestino;
+    const destino = loginDestino;
+    loginDestino = null;
+    document.getElementById("login-overlay")?.setAttribute("hidden", "");
+    if (isBoxDestination(destino)) {
+      await navigateBox(destino);
+    } else {
+      window.location.href = destino;
+    }
     return;
   }
 
@@ -955,7 +966,7 @@ gavetasPrivadas.forEach((gaveta) => {
     const resposta = await fetch("/api/auth/me");
 
     if (resposta.ok) {
-      window.location.href = destino;
+      await navigateBox(destino);
       return;
     }
 
@@ -967,6 +978,11 @@ const boxAudio = document.getElementById("box-musica");
 const musicPlayButton = document.getElementById("music-play-button");
 
 if (boxAudio && musicPlayButton) {
+  musicPlayButton.textContent = boxAudio.paused ? "▶" : "❚❚";
+  musicPlayButton.setAttribute(
+    "aria-label",
+    boxAudio.paused ? "Reproduzir música" : "Pausar música",
+  );
   musicPlayButton.addEventListener("click", async () => {
     if (boxAudio.paused) {
       try {
@@ -983,10 +999,13 @@ if (boxAudio && musicPlayButton) {
     }
   });
 
-  boxAudio.addEventListener("ended", () => {
-    musicPlayButton.textContent = "▶";
-    musicPlayButton.setAttribute("aria-label", "Reproduzir música");
-  });
+  boxAudio.onended = () => {
+    const button = document.getElementById("music-play-button");
+    if (button) {
+      button.textContent = "▶";
+      button.setAttribute("aria-label", "Reproduzir música");
+    }
+  };
 }
 
 // =========================
@@ -1062,19 +1081,19 @@ if (boxInternalHero && boxInternalNav) {
 
       ultimaPosicao = posicaoAtual;
     },
-    { passive: true },
+    { passive: true, signal: pageEvents.signal },
   );
 }
 
 const boxReturnLink = document.getElementById("box-return");
 const boxReturnTriggers = document.querySelectorAll(".box-return-trigger");
 
-if (boxReturnLink && boxReturnTriggers.length) {
+if (boxReturnTriggers.length) {
   function voltarParaBox() {
-    const destino = boxReturnLink.getAttribute("href");
+    const destino = boxReturnLink?.getAttribute("href") || `/boxes/${boxId}`;
 
     if (destino && destino !== "#") {
-      window.location.href = destino;
+      navigateBox(destino);
     }
   }
 
@@ -1089,3 +1108,107 @@ if (boxReturnLink && boxReturnTriggers.length) {
     });
   });
 }
+return pageEvents;
+}
+
+// Keep the media element in this document while navigating within one Box.
+const boxRoute = window.location.pathname.match(/^\/boxes\/([^/]+)(?:\/(?:album|depoimentos|memorias|pessoas))?\/?$/);
+const persistentBoxId = boxRoute?.[1];
+let currentPageEvents;
+let navigationNumber = 0;
+
+function isBoxDestination(href) {
+  if (!persistentBoxId) return false;
+  const url = new URL(href, window.location.href);
+  const parts = url.pathname.replace(/\/$/, "").split("/");
+  return (
+    url.origin === window.location.origin &&
+    parts[1] === "boxes" &&
+    parts[2] === persistentBoxId &&
+    (parts.length === 3 ||
+      (parts.length === 4 &&
+        ["album", "depoimentos", "memorias", "pessoas"].includes(parts[3])))
+  );
+}
+
+async function navigateBox(href, addHistory = true) {
+  const url = new URL(href, window.location.href);
+  if (!isBoxDestination(url.href)) {
+    window.location.href = url.href;
+    return;
+  }
+
+  const navigation = ++navigationNumber;
+  try {
+    const response = await fetch(url.href);
+    const finalUrl = new URL(response.url);
+    if (
+      !response.ok ||
+      !isBoxDestination(finalUrl.href) ||
+      !response.headers.get("content-type")?.includes("text/html")
+    ) {
+      window.location.href = url.href;
+      return;
+    }
+
+    const nextDocument = new DOMParser().parseFromString(
+      await response.text(),
+      "text/html",
+    );
+    if (navigation !== navigationNumber) return;
+
+    // The original audio remains attached; discard the new page's copy.
+    nextDocument.getElementById("box-musica")?.remove();
+    nextDocument.body.querySelectorAll("script").forEach((script) => script.remove());
+    const audioHost = document.getElementById("persistent-box-audio");
+    currentPageEvents?.abort();
+    for (const child of [...document.body.childNodes]) {
+      if (child !== audioHost) child.remove();
+    }
+    document.body.className = nextDocument.body.className;
+    document.body.append(...nextDocument.body.childNodes);
+    document.title = nextDocument.title;
+    if (addHistory) history.pushState(null, "", finalUrl.href);
+    window.scrollTo(0, 0);
+    currentPageEvents = initializeBoxPage();
+  } catch (error) {
+    console.error("Não foi possível abrir a página da Box:", error);
+    window.location.href = url.href;
+  }
+}
+
+if (persistentBoxId) {
+  const audio = document.getElementById("box-musica");
+  const audioHost = document.createElement("div");
+  audioHost.id = "persistent-box-audio";
+  audioHost.hidden = true;
+  audioHost.append(audio);
+  document.body.append(audioHost);
+
+  document.addEventListener("click", (event) => {
+    const link = event.target.closest("a[href]");
+    if (
+      event.defaultPrevented ||
+      !link ||
+      link.target ||
+      link.hasAttribute("download") ||
+      event.ctrlKey ||
+      event.metaKey ||
+      event.shiftKey ||
+      event.altKey ||
+      !isBoxDestination(link.href)
+    ) return;
+    event.preventDefault();
+    navigateBox(link.href);
+  });
+
+  window.addEventListener("popstate", () => {
+    if (isBoxDestination(window.location.href)) {
+      navigateBox(window.location.href, false);
+    } else {
+      window.location.reload();
+    }
+  });
+}
+
+currentPageEvents = initializeBoxPage();
