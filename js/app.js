@@ -302,7 +302,7 @@ if (testimonialSubmit && testimonialText && testimonialFeedback) {
       testimonialSubmit.textContent = "✓ Depoimento publicado";
       testimonialSubmit.disabled = false;
       testimonialFeedback.textContent = "";
-      
+
     } catch (erro) {
       console.error(erro);
 
@@ -319,11 +319,13 @@ const testimonialCreateButton = document.querySelector(
   "#testimonial-create-button",
 );
 
-testimonialText.addEventListener("input", function () {
-  if (testimonialSubmit.textContent === "✓ Depoimento publicado") {
-    testimonialSubmit.textContent = "Enviar depoimento";
-  }
-});
+if (testimonialSubmit && testimonialText) {
+  testimonialText.addEventListener("input", function () {
+    if (testimonialSubmit.textContent === "✓ Depoimento publicado") {
+      testimonialSubmit.textContent = "Enviar depoimento";
+    }
+  });
+}
 
 const testimonialForm = document.querySelector(".testimonial-form");
 
