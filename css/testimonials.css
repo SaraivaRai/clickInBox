@@ -54,8 +54,8 @@
   margin: 0 0 14px;
   padding: 10px 10px 7px;
 
-  background: rgba(255, 255, 255, 0.30);
-  border: 1px solid rgba(182, 123, 60, 0.08);
+  background: var(--box-ambiente-superficie, rgba(255, 255, 255, 0.30));
+  border: 1px solid var(--box-ambiente-borda, rgba(182, 123, 60, 0.08));
   border-radius: 16px;
   box-shadow: 0 2px 10px rgba(80, 55, 35, 0.025);
 }
@@ -111,8 +111,8 @@
   margin: 0 0 12px;
   padding: 10px 12px 8px;
 
-  background: rgba(255, 255, 255, 0.30);
-  border: 1px solid rgba(182, 123, 60, 0.08);
+  background: var(--box-ambiente-superficie, rgba(255, 255, 255, 0.30));
+  border: 1px solid var(--box-ambiente-borda, rgba(182, 123, 60, 0.08));
   border-radius: 16px;
   box-shadow: 0 2px 10px rgba(80, 55, 35, 0.025);
 }
@@ -236,7 +236,7 @@ body:has(.testimonials)::after {
       transparent 22%,
       rgba(255, 255, 255, 0) 31%,
       rgba(255, 255, 255, 0.34) 33.2%,
-      rgba(198, 145, 97, 0.10) 34.5%,
+      var(--box-ambiente-mancha, rgba(198, 145, 97, 0.10)) 34.5%,
       rgba(255, 255, 255, 0.20) 36%,
       transparent 39%
     ),
@@ -244,7 +244,7 @@ body:has(.testimonials)::after {
       151deg,
       transparent 43%,
       rgba(221, 177, 139, 0) 48%,
-      rgba(221, 177, 139, 0.09) 50.3%,
+      var(--box-ambiente-mancha-2, rgba(221, 177, 139, 0.09)) 50.3%,
       rgba(255, 255, 255, 0.28) 52%,
       rgba(255, 255, 255, 0) 55.5%
     ),
@@ -253,7 +253,7 @@ body:has(.testimonials)::after {
       transparent 64%,
       rgba(255, 255, 255, 0) 69%,
       rgba(255, 255, 255, 0.26) 71.2%,
-      rgba(190, 137, 94, 0.08) 72.8%,
+      var(--box-ambiente-mancha-3, rgba(190, 137, 94, 0.08)) 72.8%,
       transparent 76%
     );
 
@@ -277,7 +277,7 @@ body:has(.testimonials) > header::after {
       126deg,
       transparent 18%,
       rgba(255, 255, 255, 0.32) 42%,
-      rgba(198, 145, 97, 0.08) 45%,
+      var(--box-ambiente-mancha, rgba(198, 145, 97, 0.08)) 45%,
       transparent 51%
     ),
     linear-gradient(

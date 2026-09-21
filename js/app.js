@@ -67,6 +67,7 @@ async function carregarBox() {
   const boxNome = document.querySelector("#box-nome");
   const boxEvento = document.querySelector("#box-evento");
   const boxImagemPrincipal = document.querySelector("#box-imagem-principal");
+  const boxApresentacaoImagem = document.querySelector("#box-apresentacao-imagem");
   const boxMusica = document.querySelector("#box-musica");
   const boxMusicaSource = document.querySelector("#box-musica-source");
 
@@ -87,9 +88,35 @@ async function carregarBox() {
   }
   if (boxEvento) boxEvento.textContent = box.evento;
 
+  const primeiroNome = box.nome.trim().split(/\s+/)[0];
+  const testimonialText = document.querySelector("#testimonial-text");
+  const memoryText = document.querySelector("#memory-text");
+  if (testimonialText) testimonialText.placeholder = `Escreva uma mensagem para ${primeiroNome}...`;
+  if (memoryText) memoryText.placeholder = `Conte uma lembrança com ${primeiroNome}...`;
+
+  if (boxApresentacaoImagem && box.apresentacao_tipo === "imagem" && box.apresentacao_imagem) {
+    boxApresentacaoImagem.src = box.apresentacao_imagem;
+    boxApresentacaoImagem.alt = `${box.nome} — ${box.evento}`;
+    boxApresentacaoImagem.hidden = false;
+    if (boxNome) boxNome.hidden = true;
+    boxEvento?.closest(".box-event-line")?.setAttribute("hidden", "");
+  }
+
+  if (box.cor_ambientacao) aplicarAmbientacao(box.cor_ambientacao);
+
   if (boxImagemPrincipal) {
     boxImagemPrincipal.src = box.imagem_principal;
     boxImagemPrincipal.alt = `${box.nome} - ${box.evento}`;
+    if (box.imagem_foco_x !== null && box.imagem_foco_y !== null && box.imagem_zoom !== null) {
+      const fotoContainer = boxImagemPrincipal.closest(".box-hero-photo");
+      const deslocamentoX = -Number(box.imagem_foco_x) * 0.13;
+
+      fotoContainer?.classList.add("has-custom-framing");
+      boxImagemPrincipal.classList.add("box-hero-image-custom");
+      boxImagemPrincipal.style.setProperty("--box-image-left", `${deslocamentoX}%`);
+      boxImagemPrincipal.style.setProperty("--box-image-focus-y", `${box.imagem_foco_y}%`);
+      boxImagemPrincipal.style.setProperty("--box-image-zoom", box.imagem_zoom);
+    }
   }
   if (boxMusica && boxMusicaSource) {
     if (boxMusicaSource.getAttribute("src") !== box.musica) {
@@ -97,6 +124,66 @@ async function carregarBox() {
       boxMusica.load();
     }
   }
+}
+
+function aplicarAmbientacao(cor) {
+  const hex = cor.replace("#", "");
+  if (!/^[0-9a-f]{6}$/i.test(hex)) return;
+  const limitar = (valor, minimo, maximo) => Math.min(maximo, Math.max(minimo, valor));
+  const linearizar = (valor) => valor <= 0.04045 ? valor / 12.92 : ((valor + 0.055) / 1.055) ** 2.4;
+  const codificar = (valor) => valor <= 0.0031308 ? 12.92 * valor : 1.055 * valor ** (1 / 2.4) - 0.055;
+  const rgbOriginal = [0, 2, 4].map((i) => linearizar(parseInt(hex.slice(i, i + 2), 16) / 255));
+  const l = Math.cbrt(0.4122214708 * rgbOriginal[0] + 0.5363325363 * rgbOriginal[1] + 0.0514459929 * rgbOriginal[2]);
+  const m = Math.cbrt(0.2119034982 * rgbOriginal[0] + 0.6806995451 * rgbOriginal[1] + 0.1073969566 * rgbOriginal[2]);
+  const s = Math.cbrt(0.0883024619 * rgbOriginal[0] + 0.2817188376 * rgbOriginal[1] + 0.6299787005 * rgbOriginal[2]);
+  const a = 1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s;
+  const b = 0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s;
+  const cromaticidade = limitar(Math.hypot(a, b), 0.035, 0.22);
+  const matiz = Math.atan2(b, a);
+  const papel = (luminosidade, fatorCroma, alpha = 1, limiteCroma = 0.16) => {
+    const croma = limitar(cromaticidade * fatorCroma, 0.004, limiteCroma);
+    const aa = croma * Math.cos(matiz);
+    const bb = croma * Math.sin(matiz);
+    const ll = luminosidade + 0.3963377774 * aa + 0.2158037573 * bb;
+    const mm = luminosidade - 0.1055613458 * aa - 0.0638541728 * bb;
+    const ss = luminosidade - 0.0894841775 * aa - 1.291485548 * bb;
+    const linear = [
+      4.0767416621 * ll ** 3 - 3.3077115913 * mm ** 3 + 0.2309699292 * ss ** 3,
+      -1.2684380046 * ll ** 3 + 2.6097574011 * mm ** 3 - 0.3413193965 * ss ** 3,
+      -0.0041960863 * ll ** 3 - 0.7034186147 * mm ** 3 + 1.707614701 * ss ** 3,
+    ];
+    const rgb = linear.map((canal) => Math.round(limitar(codificar(canal), 0, 1) * 255));
+    return alpha === 1 ? `rgb(${rgb.join(", ")})` : `rgba(${rgb.join(", ")}, ${alpha})`;
+  };
+  const root = document.documentElement.style;
+  root.setProperty("--box-ambiente-pagina", papel(0.95, 0.18, 1, 0.035));
+  root.setProperty("--box-ambiente-header", papel(0.975, 0.10, 1, 0.022));
+  root.setProperty("--box-ambiente-hero", papel(0.97, 0.14, 1, 0.028));
+  root.setProperty("--box-ambiente-nav", papel(0.98, 0.11, 0.98, 0.024));
+  root.setProperty("--box-ambiente-player-1", papel(0.99, 0.06, 0.82, 0.014));
+  root.setProperty("--box-ambiente-player-2", papel(0.965, 0.13, 0.72, 0.028));
+  root.setProperty("--box-ambiente-player-3", papel(0.94, 0.19, 0.60, 0.04));
+  root.setProperty("--box-ambiente-card-1", papel(0.985, 0.08, 0.96, 0.018));
+  root.setProperty("--box-ambiente-card-2", papel(0.955, 0.17, 0.84, 0.036));
+  root.setProperty("--box-ambiente-superficie", papel(0.98, 0.10, 0.90, 0.022));
+  root.setProperty("--box-ambiente-borda", papel(0.76, 0.30, 0.38, 0.06));
+  root.setProperty("--box-ambiente-mancha", papel(0.86, 0.42, 0.13, 0.08));
+  root.setProperty("--box-ambiente-mancha-2", papel(0.91, 0.30, 0.11, 0.055));
+  root.setProperty("--box-ambiente-mancha-3", papel(0.81, 0.38, 0.10, 0.075));
+  root.setProperty("--box-ambiente-sombra", papel(0.30, 0.10, 0.10, 0.018));
+  root.setProperty("--box-decor-deep", papel(0.44, 0.58, 1, 0.11));
+  root.setProperty("--box-decor-accent", papel(limitar(0.60 + (0.70 - cromaticidade) * 0.04, 0.60, 0.68), 0.88, 1, 0.16));
+  root.setProperty("--box-decor-soft", papel(0.76, 0.58, 1, 0.105));
+  root.setProperty("--box-decor-glow", papel(0.91, 0.32, 0.28, 0.06));
+  root.setProperty("--box-cor-laranja", papel(0.55, 0.76, 1, 0.14));
+  root.setProperty("--box-cor-laranja-suave", papel(0.63, 0.70, 1, 0.13));
+  root.setProperty("--box-cor-rosa", papel(0.67, 0.78, 1, 0.145));
+  root.setProperty("--box-cor-rosa-suave", papel(0.60, 0.72, 1, 0.135));
+  root.setProperty("--box-cor-texto-suave", papel(0.43, 0.16, 1, 0.032));
+  root.setProperty("--box-texto-secundario", papel(0.40, 0.20, 1, 0.04));
+  root.setProperty("--box-nav-texto", papel(0.48, 0.15, 1, 0.03));
+  root.setProperty("--box-borda", `1px solid ${papel(0.76, 0.30, 0.38, 0.06)}`);
+  root.setProperty("--box-borda-suave", `1px solid ${papel(0.80, 0.27, 0.42, 0.055)}`);
 }
 
 carregarBox();

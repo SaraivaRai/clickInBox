@@ -26,6 +26,11 @@ const upload = multer({
   },
 });
 
+const adminUpload = multer({
+  dest: "uploads/",
+  limits: { fileSize: 30 * 1024 * 1024, files: 3 },
+});
+
 async function processarImagem(caminhoOriginal) {
   const caminhoFinal = caminhoOriginal + ".jpg";
 
@@ -72,6 +77,10 @@ app.use(
   "/uploads/perfis",
   express.static(path.join(__dirname, "uploads", "perfis")),
 );
+app.use(
+  "/uploads/boxes",
+  express.static(path.join(__dirname, "uploads", "boxes")),
+);
 
 app.get("/manifest.webmanifest", (req, res) => {
   res.sendFile(path.join(__dirname, "manifest.webmanifest"));
@@ -96,10 +105,10 @@ function obterCookie(req, nome) {
   return decodeURIComponent(cookieEncontrado.substring(nome.length + 1));
 }
 
-async function criarConvite(boxId, papel, limiteUsos) {
+async function criarConvite(boxId, papel, limiteUsos, executor = pool) {
   const token = gerarTokenConvite();
 
-  const resultado = await pool.query(
+  const resultado = await executor.query(
     `
       INSERT INTO convites (box_id, papel, token, limite_usos)
       VALUES ($1, $2, $3, $4)
@@ -112,6 +121,10 @@ async function criarConvite(boxId, papel, limiteUsos) {
 }
 
 function podeEscreverNaBox(papel, dataEvento) {
+  if (papel === "adm") {
+    return true;
+  }
+
   const agora = new Date();
   const evento = new Date(dataEvento);
 
@@ -225,6 +238,16 @@ async function autenticarPagina(req, res, next) {
   return autenticarUsuario(req, res, next);
 }
 
+function autorizarAdmin(req, res, next) {
+  if (!req.usuario?.admin) {
+    if (req.path.startsWith("/api/")) {
+      return res.status(403).json({ erro: "Acesso restrito a administradores" });
+    }
+    return res.status(403).send("Acesso restrito a administradores");
+  }
+  next();
+}
+
 app.get("/", function (req, res) {
   res.sendFile(__dirname + "/index.html");
 });
@@ -234,6 +257,14 @@ app.get("/perfil", autenticarPagina, function (req, res) {
 app.get("/login.html", function (req, res) {
   res.sendFile(__dirname + "/login.html");
 });
+app.get(
+  ["/admin/boxes", "/admin/boxes/nova", "/admin/boxes/:id/editar"],
+  autenticarPagina,
+  autorizarAdmin,
+  function (req, res) {
+    res.sendFile(path.join(__dirname, "admin-boxes.html"));
+  },
+);
 app.get("/boxes/:boxId", function (req, res) {
   res.sendFile(__dirname + "/box.html");
 });
@@ -342,7 +373,7 @@ app.get(
         "SELECT usuarios.id, usuarios.nome, usuarios.foto_perfil, usuarios_boxes.papel FROM usuarios " +
           "JOIN usuarios_boxes ON usuarios.id = usuarios_boxes.usuario_id " +
           "JOIN boxes ON boxes.id = usuarios_boxes.box_id " +
-          "WHERE boxes.id = $1 " +
+          "WHERE boxes.id = $1 AND usuarios_boxes.papel <> 'adm' " +
           "ORDER BY " +
           "CASE usuarios_boxes.papel " +
           "WHEN 'protagonista' THEN 1 " +
@@ -1121,6 +1152,341 @@ app.get("/convite/:token", autenticarPagina, async function (req, res) {
 
     res.status(500).send("Erro interno do servidor.");
   }
+});
+
+const CONVITES_PADRAO = [
+  { rotulo: "Protagonista", papel: "protagonista", limite: 1 },
+  { rotulo: "Mãe", papel: "mae", limite: 1 },
+  { rotulo: "Pai", papel: "pai", limite: 1 },
+  { rotulo: "As 15", papel: "coautora", limite: 15 },
+  { rotulo: "Convidados", papel: "convidado", limite: 500 },
+];
+
+function limparUploadsTemporarios(req) {
+  for (const arquivos of Object.values(req.files || {})) {
+    for (const arquivo of arquivos) {
+      fs.rmSync(arquivo.path, { force: true });
+    }
+  }
+}
+
+function caminhoPublicoBox(boxId, nome) {
+  return `/uploads/boxes/${boxId}/${nome}`;
+}
+
+function caminhoFisicoPublico(caminhoPublico) {
+  if (!caminhoPublico?.startsWith("/uploads/")) return null;
+  const relativo = caminhoPublico.replace(/^\/+/, "");
+  const absoluto = path.resolve(__dirname, relativo);
+  const raiz = path.resolve(__dirname, "uploads") + path.sep;
+  return absoluto.startsWith(raiz) ? absoluto : null;
+}
+
+function removerArquivoPublico(caminhoPublico) {
+  const caminho = caminhoFisicoPublico(caminhoPublico);
+  if (caminho) fs.rmSync(caminho, { force: true });
+}
+
+async function validarArquivo(caminho, tipos, mensagem) {
+  const { fileTypeFromFile } = await import("file-type");
+  const tipo = await fileTypeFromFile(caminho);
+  if (!tipo || !tipos.includes(tipo.mime)) throw new Error(mensagem);
+  return tipo;
+}
+
+async function prepararArquivosBox(req, boxId) {
+  const preparados = {};
+  const criados = [];
+  const pasta = path.join(__dirname, "uploads", "boxes", String(boxId));
+  fs.mkdirSync(pasta, { recursive: true });
+  const sufixo = `${Date.now()}-${crypto.randomBytes(5).toString("hex")}`;
+
+  try {
+    const hero = req.files?.imagem_principal?.[0];
+    if (hero) {
+      const tipo = await validarArquivo(
+        hero.path,
+        ["image/jpeg", "image/png", "image/webp", "image/avif"],
+        "A foto principal deve ser JPEG, PNG, WebP ou AVIF",
+      );
+      const original = `hero-original-${sufixo}.${tipo.ext}`;
+      const otimizada = `hero-${sufixo}.jpg`;
+      const caminhoOriginal = path.join(pasta, original);
+      const caminhoOtimizada = path.join(pasta, otimizada);
+      fs.renameSync(hero.path, caminhoOriginal);
+      criados.push(caminhoOriginal);
+      await sharp(caminhoOriginal)
+        .rotate()
+        .resize({ width: 2400, height: 2400, fit: "inside", withoutEnlargement: true })
+        .jpeg({ quality: 84, mozjpeg: true })
+        .toFile(caminhoOtimizada);
+      criados.push(caminhoOtimizada);
+      preparados.imagem_principal_original = caminhoPublicoBox(boxId, original);
+      preparados.imagem_principal = caminhoPublicoBox(boxId, otimizada);
+    }
+
+    const arte = req.files?.apresentacao_imagem?.[0];
+    if (arte) {
+      const tipo = await validarArquivo(
+        arte.path,
+        ["image/png", "image/webp"],
+        "A arte deve ser PNG ou WebP com transparência",
+      );
+      const metadata = await sharp(arte.path).metadata();
+      if ((metadata.width || 0) > 5000 || (metadata.height || 0) > 5000) {
+        throw new Error("A arte pode ter no máximo 5000 × 5000 pixels");
+      }
+      const nome = `apresentacao-${sufixo}.${tipo.ext}`;
+      const destino = path.join(pasta, nome);
+      fs.renameSync(arte.path, destino);
+      criados.push(destino);
+      preparados.apresentacao_imagem = caminhoPublicoBox(boxId, nome);
+    }
+
+    const musica = req.files?.musica?.[0];
+    if (musica) {
+      if (musica.size > 25 * 1024 * 1024) throw new Error("O MP3 pode ter no máximo 25 MB");
+      await validarArquivo(musica.path, ["audio/mpeg"], "A música deve ser um arquivo MP3 válido");
+      const nome = `musica-${sufixo}.mp3`;
+      const destino = path.join(pasta, nome);
+      fs.renameSync(musica.path, destino);
+      criados.push(destino);
+      preparados.musica = caminhoPublicoBox(boxId, nome);
+    }
+    limparUploadsTemporarios(req);
+    return { preparados, criados };
+  } catch (erro) {
+    limparUploadsTemporarios(req);
+    criados.forEach((arquivo) => fs.rmSync(arquivo, { force: true }));
+    throw erro;
+  }
+}
+
+function lerDadosBox(body) {
+  const nome = String(body.nome || "").trim();
+  const evento = String(body.evento || "").trim();
+  const dataEvento = String(body.data_evento || "").trim();
+  const apresentacaoTipo = body.apresentacao_tipo === "imagem" ? "imagem" : "texto";
+  const cor = String(body.cor_ambientacao || "").trim() || null;
+  const semEnquadramento = body.imagem_foco_x === undefined && body.imagem_foco_y === undefined && body.imagem_zoom === undefined;
+  const focoX = semEnquadramento ? null : Number(body.imagem_foco_x);
+  const focoY = semEnquadramento ? null : Number(body.imagem_foco_y);
+  const zoom = semEnquadramento ? null : Number(body.imagem_zoom);
+  if (!nome || !evento || !/^\d{4}-\d{2}-\d{2}$/.test(dataEvento)) {
+    throw new Error("Nome, evento e data do evento são obrigatórios");
+  }
+  if (cor && !/^#[0-9a-f]{6}$/i.test(cor)) throw new Error("Cor de ambientação inválida");
+  if (!semEnquadramento && !(focoX >= 0 && focoX <= 100 && focoY >= 0 && focoY <= 100 && zoom >= 1 && zoom <= 3)) {
+    throw new Error("Enquadramento da foto inválido");
+  }
+  return { nome, evento, dataEvento, apresentacaoTipo, cor, focoX, focoY, zoom };
+}
+
+app.get("/api/admin/boxes", autenticarUsuario, autorizarAdmin, async (req, res) => {
+  try {
+    const resultado = await pool.query(
+      `SELECT boxes.*, EXISTS (
+         SELECT 1 FROM usuarios_boxes
+         WHERE usuario_id = $1 AND box_id = boxes.id AND papel = 'adm'
+       ) AS participando_adm
+       FROM boxes ORDER BY boxes.id DESC`,
+      [req.usuario.id],
+    );
+    res.json(resultado.rows);
+  } catch (erro) {
+    console.error(erro);
+    res.status(500).json({ erro: "Não foi possível listar as Boxes" });
+  }
+});
+
+app.get("/api/admin/boxes/:id", autenticarUsuario, autorizarAdmin, async (req, res) => {
+  try {
+    const [box, convites, vinculo] = await Promise.all([
+      pool.query("SELECT * FROM boxes WHERE id = $1", [req.params.id]),
+      pool.query("SELECT id, papel, token, limite_usos, usos, ativo FROM convites WHERE box_id = $1 ORDER BY id", [req.params.id]),
+      pool.query("SELECT 1 FROM usuarios_boxes WHERE usuario_id = $1 AND box_id = $2 AND papel = 'adm'", [req.usuario.id, req.params.id]),
+    ]);
+    if (!box.rows.length) return res.status(404).json({ erro: "Box não encontrada" });
+    res.json({ box: box.rows[0], convites: convites.rows, participando_adm: Boolean(vinculo.rows.length) });
+  } catch (erro) {
+    console.error(erro);
+    res.status(500).json({ erro: "Não foi possível carregar a Box" });
+  }
+});
+
+app.post(
+  "/api/admin/boxes",
+  autenticarUsuario,
+  autorizarAdmin,
+  adminUpload.fields([
+    { name: "imagem_principal", maxCount: 1 },
+    { name: "apresentacao_imagem", maxCount: 1 },
+    { name: "musica", maxCount: 1 },
+  ]),
+  async (req, res) => {
+    let client;
+    let criados = [];
+    let boxId;
+    try {
+      const dados = lerDadosBox(req.body);
+      if (!dados.cor) throw new Error("Escolha a cor de ambientação da Box");
+      if (dados.focoX === null) throw new Error("Defina o enquadramento da foto principal");
+      if (!req.files?.imagem_principal?.[0] || !req.files?.musica?.[0]) {
+        throw new Error("Foto principal e música são obrigatórias na criação");
+      }
+      if (dados.apresentacaoTipo === "imagem" && !req.files?.apresentacao_imagem?.[0]) {
+        throw new Error("Envie a arte da apresentação");
+      }
+      client = await pool.connect();
+      await client.query("BEGIN");
+      const insercao = await client.query(
+        `INSERT INTO boxes (nome, evento, data_evento, apresentacao_tipo,
+          imagem_foco_x, imagem_foco_y, imagem_zoom, cor_ambientacao)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id`,
+        [dados.nome, dados.evento, dados.dataEvento, dados.apresentacaoTipo, dados.focoX, dados.focoY, dados.zoom, dados.cor],
+      );
+      boxId = insercao.rows[0].id;
+      const arquivos = await prepararArquivosBox(req, boxId);
+      criados = arquivos.criados;
+      const p = arquivos.preparados;
+      await client.query(
+        "UPDATE boxes SET imagem_principal=$1, imagem_principal_original=$2, apresentacao_imagem=$3, musica=$4 WHERE id=$5",
+        [p.imagem_principal, p.imagem_principal_original, p.apresentacao_imagem || null, p.musica, boxId],
+      );
+      for (const convite of CONVITES_PADRAO) {
+        await criarConvite(boxId, convite.papel, convite.limite, client);
+      }
+      await client.query("COMMIT");
+      res.status(201).json({ id: boxId });
+    } catch (erro) {
+      if (client) await client.query("ROLLBACK").catch(() => {});
+      criados.forEach((arquivo) => fs.rmSync(arquivo, { force: true }));
+      limparUploadsTemporarios(req);
+      console.error(erro);
+      res.status(400).json({ erro: erro.message || "Não foi possível criar a Box" });
+    } finally {
+      client?.release();
+    }
+  },
+);
+
+app.put(
+  "/api/admin/boxes/:id",
+  autenticarUsuario,
+  autorizarAdmin,
+  adminUpload.fields([
+    { name: "imagem_principal", maxCount: 1 },
+    { name: "apresentacao_imagem", maxCount: 1 },
+    { name: "musica", maxCount: 1 },
+  ]),
+  async (req, res) => {
+    let novos = [];
+    try {
+      const dados = lerDadosBox(req.body);
+      const atual = await pool.query("SELECT * FROM boxes WHERE id=$1", [req.params.id]);
+      if (!atual.rows.length) throw new Error("Box não encontrada");
+      const arquivos = await prepararArquivosBox(req, req.params.id);
+      novos = arquivos.criados;
+      const p = arquivos.preparados;
+      if (dados.apresentacaoTipo === "imagem" && !(p.apresentacao_imagem || atual.rows[0].apresentacao_imagem)) {
+        throw new Error("Envie a arte da apresentação");
+      }
+      const resultado = await pool.query(
+        `UPDATE boxes SET nome=$1, evento=$2, data_evento=$3, apresentacao_tipo=$4,
+          imagem_foco_x=$5, imagem_foco_y=$6, imagem_zoom=$7, cor_ambientacao=$8,
+          imagem_principal=COALESCE($9,imagem_principal),
+          imagem_principal_original=COALESCE($10,imagem_principal_original),
+          apresentacao_imagem=COALESCE($11,apresentacao_imagem),
+          musica=COALESCE($12,musica)
+         WHERE id=$13 RETURNING *`,
+        [dados.nome,dados.evento,dados.dataEvento,dados.apresentacaoTipo,dados.focoX,dados.focoY,dados.zoom,dados.cor,
+          p.imagem_principal||null,p.imagem_principal_original||null,p.apresentacao_imagem||null,p.musica||null,req.params.id],
+      );
+      const anterior = atual.rows[0];
+      if (p.imagem_principal) {
+        try { removerArquivoPublico(anterior.imagem_principal); } catch (erroArquivo) { console.error("Falha ao remover foto substituída", erroArquivo); }
+        try { removerArquivoPublico(anterior.imagem_principal_original); } catch (erroArquivo) { console.error("Falha ao remover original substituído", erroArquivo); }
+      }
+      if (p.apresentacao_imagem) {
+        try { removerArquivoPublico(anterior.apresentacao_imagem); } catch (erroArquivo) { console.error("Falha ao remover arte substituída", erroArquivo); }
+      }
+      if (p.musica) {
+        try { removerArquivoPublico(anterior.musica); } catch (erroArquivo) { console.error("Falha ao remover música substituída", erroArquivo); }
+      }
+      res.json(resultado.rows[0]);
+    } catch (erro) {
+      novos.forEach((arquivo) => fs.rmSync(arquivo, { force: true }));
+      limparUploadsTemporarios(req);
+      console.error(erro);
+      res.status(400).json({ erro: erro.message || "Não foi possível editar a Box" });
+    }
+  },
+);
+
+app.post("/api/admin/boxes/:id/participacao", autenticarUsuario, autorizarAdmin, async (req, res) => {
+  try {
+    const atual = await pool.query("SELECT papel FROM usuarios_boxes WHERE usuario_id=$1 AND box_id=$2", [req.usuario.id, req.params.id]);
+    if (atual.rows.length && atual.rows[0].papel !== "adm") {
+      return res.status(409).json({ erro: "Você já participa desta Box com outro papel" });
+    }
+    await pool.query(
+      "INSERT INTO usuarios_boxes (usuario_id,box_id,papel) VALUES ($1,$2,'adm') ON CONFLICT (usuario_id,box_id) DO NOTHING",
+      [req.usuario.id, req.params.id],
+    );
+    res.status(201).json({ mensagem: "Participação ADM ativa" });
+  } catch (erro) {
+    console.error(erro);
+    res.status(400).json({ erro: "Não foi possível ativar a participação ADM" });
+  }
+});
+
+app.delete("/api/admin/boxes/:id/participacao", autenticarUsuario, autorizarAdmin, async (req, res) => {
+  const conteudo = await pool.query(
+    `SELECT
+      (SELECT COUNT(*) FROM fotos WHERE box_id=$1 AND usuario_id=$2) +
+      (SELECT COUNT(*) FROM memorias WHERE box_id=$1 AND usuario_id=$2) +
+      (SELECT COUNT(*) FROM depoimentos WHERE box_id=$1 AND usuario_id=$2) AS total`,
+    [req.params.id, req.usuario.id],
+  );
+  if (Number(conteudo.rows[0].total) > 0) {
+    return res.status(409).json({ erro: "Limpe seu conteúdo de demonstração antes de remover a participação ADM" });
+  }
+  await pool.query("DELETE FROM usuarios_boxes WHERE usuario_id=$1 AND box_id=$2 AND papel='adm'", [req.usuario.id, req.params.id]);
+  res.json({ mensagem: "Participação ADM removida" });
+});
+
+app.delete("/api/admin/boxes/:id/conteudo-proprio", autenticarUsuario, autorizarAdmin, async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const fotos = await client.query("DELETE FROM fotos WHERE box_id=$1 AND usuario_id=$2 RETURNING arquivo", [req.params.id, req.usuario.id]);
+    const memorias = await client.query("DELETE FROM memorias WHERE box_id=$1 AND usuario_id=$2 RETURNING foto", [req.params.id, req.usuario.id]);
+    const depoimentos = await client.query("DELETE FROM depoimentos WHERE box_id=$1 AND usuario_id=$2 RETURNING id", [req.params.id, req.usuario.id]);
+    await client.query("COMMIT");
+    const candidatos = [...fotos.rows.map((r) => r.arquivo), ...memorias.rows.map((r) => r.foto)].filter(Boolean);
+    for (const arquivo of candidatos) {
+      const referencias = await pool.query(
+        "SELECT (SELECT COUNT(*) FROM fotos WHERE arquivo=$1) + (SELECT COUNT(*) FROM memorias WHERE foto=$1) AS total",
+        [arquivo],
+      );
+      if (Number(referencias.rows[0].total) === 0) {
+        try { removerArquivoPublico(arquivo); } catch (erroArquivo) { console.error("Falha ao remover arquivo sem referência", erroArquivo); }
+      }
+    }
+    res.json({ removidos: { fotos: fotos.rowCount, memorias: memorias.rowCount, depoimentos: depoimentos.rowCount } });
+  } catch (erro) {
+    await client.query("ROLLBACK");
+    console.error(erro);
+    res.status(500).json({ erro: "Não foi possível limpar seu conteúdo" });
+  } finally {
+    client.release();
+  }
+});
+
+app.use((erro, req, res, next) => {
+  if (!(erro instanceof multer.MulterError)) return next(erro);
+  limparUploadsTemporarios(req);
+  res.status(400).json({ erro: erro.code === "LIMIT_FILE_SIZE" ? "Arquivo acima do limite de 30 MB" : erro.message });
 });
 
 app.listen(PORT, function () {
