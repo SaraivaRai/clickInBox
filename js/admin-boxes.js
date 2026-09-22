@@ -37,6 +37,7 @@ function formHtml(box = {}) {
         <div class="field"><label for="evento">Evento</label><input id="evento" name="evento" maxlength="100" required value="${escapeHtml(box.evento)}"></div>
         <div class="field"><label for="data_evento">Data do evento</label><input id="data_evento" name="data_evento" type="date" required value="${date}"></div>
         <div class="field"><label for="cor_ambientacao">Cor de ambientação</label><input id="cor_ambientacao" name="cor_ambientacao" type="color" value="${escapeHtml(box.cor_ambientacao || "#d99678")}" ${!creating && !box.cor_ambientacao ? "disabled" : ""}><label class="hint"><input id="usar-cor" type="checkbox" style="width:auto" ${creating || box.cor_ambientacao ? "checked" : ""} ${creating ? "disabled" : ""}> Usar cor derivada nesta Box</label></div>
+        <label class="hint"><input name="visivel_home" type="checkbox" style="width:auto" ${box.visivel_home ? "checked" : ""}> Exibir na Home</label>
       </section>
       <fieldset class="panel"><legend>Apresentação</legend><div class="radio-row">
         <label><input type="radio" name="apresentacao_tipo" value="texto" ${box.apresentacao_tipo !== "imagem" ? "checked" : ""}> Texto</label>

@@ -180,13 +180,19 @@
   gap: 10px;
 }
 
-.album-grid a {
+.album-publication {
+  position: relative;
   display: block;
   overflow: hidden;
   border-radius: 8px;
 }
 
-.album-grid img {
+.album-publication > a {
+  display: block;
+  height: 100%;
+}
+
+.album-publication img {
   width: 100%;
   height: 100%;
   display: block;
@@ -195,19 +201,19 @@
   aspect-ratio: 1 / 1;
 }
 
-.album-grid a:nth-child(1) {
+.album-publication:nth-child(1) {
   grid-row: span 2;
 }
 
-.album-grid a:nth-child(1) img {
+.album-publication:nth-child(1) img {
   aspect-ratio: auto;
 }
 
-.album-grid a:nth-child(4) {
+.album-publication:nth-child(4) {
   grid-column: span 2;
 }
 
-.album-grid a:nth-child(4) img {
+.album-publication:nth-child(4) img {
   aspect-ratio: 2 / 1;
 }
 

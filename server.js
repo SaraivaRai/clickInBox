@@ -305,6 +305,18 @@ async function autorizarBox(req, res, next) {
   next();
 }
 
+async function obterPapelNaBox(usuarioId, boxId) {
+  const vinculo = await pool.query(
+    "SELECT papel FROM usuarios_boxes WHERE usuario_id = $1 AND box_id = $2",
+    [usuarioId, boxId],
+  );
+  return vinculo.rows[0]?.papel || null;
+}
+
+function papelPodeModerarPublicacoes(papel) {
+  return papel === "protagonista" || papel === "adm";
+}
+
 app.get(
   "/boxes/:boxId/memorias",
   autenticarPagina,
@@ -328,6 +340,23 @@ app.get("/api/status", function (req, res) {
     status: "ok",
     projeto: "Click In Box",
   });
+});
+
+app.get("/api/boxes", async function (req, res) {
+  try {
+    const resultado = await pool.query(
+      `SELECT id, nome, evento, imagem_principal
+       FROM boxes
+       WHERE visivel_home = TRUE
+         AND imagem_principal IS NOT NULL
+         AND BTRIM(imagem_principal) <> ''
+       ORDER BY id DESC`,
+    );
+    res.json(resultado.rows);
+  } catch (erro) {
+    console.error(erro);
+    res.status(500).json({ erro: "Não foi possível listar as Boxes" });
+  }
 });
 
 app.get("/api/boxes/:id", async function (req, res) {
@@ -438,7 +467,7 @@ app.get(
           "JOIN usuarios ON usuarios.id = depoimentos.usuario_id " +
           "JOIN usuarios_boxes ON usuarios_boxes.usuario_id = usuarios.id " +
           "AND usuarios_boxes.box_id = depoimentos.box_id " +
-          "WHERE depoimentos.box_id = $1 " +
+          "WHERE depoimentos.box_id = $1 AND depoimentos.excluido_em IS NULL " +
           "ORDER BY depoimentos.criado_em DESC",
         [boxId],
       );
@@ -468,7 +497,7 @@ app.get(
           "JOIN usuarios ON usuarios.id = memorias.usuario_id " +
           "JOIN usuarios_boxes ON usuarios_boxes.usuario_id = usuarios.id " +
           "AND usuarios_boxes.box_id = memorias.box_id " +
-          "WHERE memorias.box_id = $1 " +
+          "WHERE memorias.box_id = $1 AND memorias.excluido_em IS NULL " +
           "ORDER BY memorias.criado_em DESC",
         [boxId],
       );
@@ -489,7 +518,7 @@ app.get("/api/memorias/:id/foto", autenticarUsuario, async function (req, res) {
 
   try {
     const resultado = await pool.query(
-      "SELECT id, box_id, foto FROM memorias WHERE id = $1",
+      "SELECT id, box_id, foto FROM memorias WHERE id = $1 AND excluido_em IS NULL",
       [memoriaId],
     );
 
@@ -546,7 +575,7 @@ app.get(
           "JOIN usuarios ON usuarios.id = fotos.usuario_id " +
           "JOIN usuarios_boxes ON usuarios_boxes.usuario_id = usuarios.id " +
           "AND usuarios_boxes.box_id = fotos.box_id " +
-          "WHERE fotos.box_id = $1 " +
+          "WHERE fotos.box_id = $1 AND fotos.excluido_em IS NULL " +
           "ORDER BY fotos.criado_em DESC",
         [boxId],
       );
@@ -567,7 +596,7 @@ app.get("/api/fotos/:id/arquivo", autenticarUsuario, async function (req, res) {
 
   try {
     const resultado = await pool.query(
-      "SELECT id, box_id, arquivo FROM fotos WHERE id = $1",
+      "SELECT id, box_id, arquivo FROM fotos WHERE id = $1 AND excluido_em IS NULL",
       [fotoId],
     );
 
@@ -1268,6 +1297,7 @@ function lerDadosBox(body) {
   const dataEvento = String(body.data_evento || "").trim();
   const apresentacaoTipo = body.apresentacao_tipo === "imagem" ? "imagem" : "texto";
   const cor = String(body.cor_ambientacao || "").trim() || null;
+  const visivelHome = body.visivel_home === "on" || body.visivel_home === "true" || body.visivel_home === true;
   const semEnquadramento = body.imagem_foco_x === undefined && body.imagem_foco_y === undefined && body.imagem_zoom === undefined;
   const focoX = semEnquadramento ? null : Number(body.imagem_foco_x);
   const focoY = semEnquadramento ? null : Number(body.imagem_foco_y);
@@ -1279,7 +1309,7 @@ function lerDadosBox(body) {
   if (!semEnquadramento && !(focoX >= 0 && focoX <= 100 && focoY >= 0 && focoY <= 100 && zoom >= 1 && zoom <= 3)) {
     throw new Error("Enquadramento da foto inválido");
   }
-  return { nome, evento, dataEvento, apresentacaoTipo, cor, focoX, focoY, zoom };
+  return { nome, evento, dataEvento, apresentacaoTipo, cor, focoX, focoY, zoom, visivelHome };
 }
 
 app.get("/api/admin/boxes", autenticarUsuario, autorizarAdmin, async (req, res) => {
@@ -1299,6 +1329,19 @@ app.get("/api/admin/boxes", autenticarUsuario, autorizarAdmin, async (req, res) 
   }
 });
 
+app.get("/api/boxes/:boxId/permissoes", autenticarUsuario, async function (req, res) {
+  try {
+    const papel = await obterPapelNaBox(req.usuario.id, req.params.boxId);
+    res.json({
+      papel,
+      pode_moderar_publicacoes: papelPodeModerarPublicacoes(papel),
+    });
+  } catch (erro) {
+    console.error(erro);
+    res.status(500).json({ erro: "Não foi possível verificar as permissões" });
+  }
+});
+
 app.get("/api/admin/boxes/:id", autenticarUsuario, autorizarAdmin, async (req, res) => {
   try {
     const [box, convites, vinculo] = await Promise.all([
@@ -1313,6 +1356,59 @@ app.get("/api/admin/boxes/:id", autenticarUsuario, autorizarAdmin, async (req, r
     res.status(500).json({ erro: "Não foi possível carregar a Box" });
   }
 });
+
+function excluirPublicacaoLogicamente(tabela, nomePublicacao) {
+  return async function (req, res) {
+    const { boxId, id } = req.params;
+
+    try {
+      const publicacao = await pool.query(
+        `SELECT id FROM ${tabela} WHERE id = $1 AND box_id = $2 AND excluido_em IS NULL`,
+        [id, boxId],
+      );
+      if (!publicacao.rows.length) {
+        return res.status(404).json({ erro: `${nomePublicacao} não encontrada` });
+      }
+
+      const papel = await obterPapelNaBox(req.usuario.id, boxId);
+      if (!papelPodeModerarPublicacoes(papel)) {
+        return res.status(403).json({ erro: "Você não pode excluir publicações desta Box" });
+      }
+
+      const resultado = await pool.query(
+        `UPDATE ${tabela}
+         SET excluido_em = CURRENT_TIMESTAMP, excluido_por = $1
+         WHERE id = $2 AND box_id = $3 AND excluido_em IS NULL
+         RETURNING id`,
+        [req.usuario.id, id, boxId],
+      );
+      if (!resultado.rows.length) {
+        return res.status(404).json({ erro: `${nomePublicacao} não encontrada` });
+      }
+
+      res.status(204).end();
+    } catch (erro) {
+      console.error(erro);
+      res.status(500).json({ erro: "Não foi possível excluir a publicação" });
+    }
+  };
+}
+
+app.delete(
+  "/api/boxes/:boxId/depoimentos/:id",
+  autenticarUsuario,
+  excluirPublicacaoLogicamente("depoimentos", "Depoimento"),
+);
+app.delete(
+  "/api/boxes/:boxId/memorias/:id",
+  autenticarUsuario,
+  excluirPublicacaoLogicamente("memorias", "Memória"),
+);
+app.delete(
+  "/api/boxes/:boxId/fotos/:id",
+  autenticarUsuario,
+  excluirPublicacaoLogicamente("fotos", "Foto"),
+);
 
 app.post(
   "/api/admin/boxes",
@@ -1341,9 +1437,9 @@ app.post(
       await client.query("BEGIN");
       const insercao = await client.query(
         `INSERT INTO boxes (nome, evento, data_evento, apresentacao_tipo,
-          imagem_foco_x, imagem_foco_y, imagem_zoom, cor_ambientacao)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id`,
-        [dados.nome, dados.evento, dados.dataEvento, dados.apresentacaoTipo, dados.focoX, dados.focoY, dados.zoom, dados.cor],
+          imagem_foco_x, imagem_foco_y, imagem_zoom, cor_ambientacao, visivel_home)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id`,
+        [dados.nome, dados.evento, dados.dataEvento, dados.apresentacaoTipo, dados.focoX, dados.focoY, dados.zoom, dados.cor, dados.visivelHome],
       );
       boxId = insercao.rows[0].id;
       const arquivos = await prepararArquivosBox(req, boxId);
@@ -1397,10 +1493,10 @@ app.put(
           imagem_principal=COALESCE($9,imagem_principal),
           imagem_principal_original=COALESCE($10,imagem_principal_original),
           apresentacao_imagem=COALESCE($11,apresentacao_imagem),
-          musica=COALESCE($12,musica)
-         WHERE id=$13 RETURNING *`,
+          musica=COALESCE($12,musica), visivel_home=$13
+         WHERE id=$14 RETURNING *`,
         [dados.nome,dados.evento,dados.dataEvento,dados.apresentacaoTipo,dados.focoX,dados.focoY,dados.zoom,dados.cor,
-          p.imagem_principal||null,p.imagem_principal_original||null,p.apresentacao_imagem||null,p.musica||null,req.params.id],
+          p.imagem_principal||null,p.imagem_principal_original||null,p.apresentacao_imagem||null,p.musica||null,dados.visivelHome,req.params.id],
       );
       const anterior = atual.rows[0];
       if (p.imagem_principal) {

@@ -51,6 +51,88 @@ const linkPessoas = document.querySelector("#link-pessoas");
 const linkMemorias = document.querySelector("#link-memorias");
 const boxReturn = document.querySelector("#box-return");
 
+async function carregarPermissaoModeracao() {
+  if (!boxId) return false;
+  try {
+    const resposta = await fetch(`/api/boxes/${boxId}/permissoes`, {
+      signal: pageEvents.signal,
+    });
+    if (!resposta.ok) return false;
+    const permissao = await resposta.json();
+    return permissao.pode_moderar_publicacoes === true;
+  } catch (erro) {
+    if (erro.name !== "AbortError") console.error("Erro ao verificar permissão de moderação:", erro);
+    return false;
+  }
+}
+
+const permissaoModeracaoPromise = carregarPermissaoModeracao();
+
+function obterDialogoExclusao() {
+  let dialogo = document.getElementById("publication-delete-dialog");
+  if (dialogo) return dialogo;
+
+  dialogo = document.createElement("dialog");
+  dialogo.id = "publication-delete-dialog";
+  dialogo.className = "publication-delete-dialog";
+  dialogo.innerHTML = `
+    <p>Deseja realmente excluir esta publicação?</p>
+    <p class="publication-delete-feedback" role="alert"></p>
+    <div class="publication-delete-actions">
+      <button type="button" class="publication-delete-cancel">Cancelar</button>
+      <button type="button" class="publication-delete-confirm">Excluir</button>
+    </div>`;
+  document.body.appendChild(dialogo);
+
+  dialogo.querySelector(".publication-delete-cancel").addEventListener("click", () => {
+    dialogo.close();
+  }, { signal: pageEvents.signal });
+  dialogo.querySelector(".publication-delete-confirm").addEventListener("click", async () => {
+    const pendente = dialogo.publicacaoPendente;
+    if (!pendente) return;
+    const confirmar = dialogo.querySelector(".publication-delete-confirm");
+    const feedback = dialogo.querySelector(".publication-delete-feedback");
+    confirmar.disabled = true;
+    feedback.textContent = "";
+    try {
+      const resposta = await fetch(`/api/boxes/${boxId}/${pendente.tipo}/${pendente.id}`, {
+        method: "DELETE",
+        signal: pageEvents.signal,
+      });
+      if (resposta.status !== 204) {
+        const dados = await resposta.json().catch(() => ({}));
+        throw new Error(dados.erro || "Não foi possível excluir a publicação");
+      }
+      pendente.elemento.remove();
+      dialogo.publicacaoPendente = null;
+      dialogo.close();
+    } catch (erro) {
+      if (erro.name !== "AbortError") feedback.textContent = erro.message;
+    } finally {
+      confirmar.disabled = false;
+    }
+  }, { signal: pageEvents.signal });
+  return dialogo;
+}
+
+function criarBotaoExclusao(tipo, id, elemento) {
+  elemento.classList.add("publication-moderated");
+  const botao = document.createElement("button");
+  botao.type = "button";
+  botao.className = "publication-delete-button";
+  botao.setAttribute("aria-label", "Excluir publicação");
+  botao.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3m-8 0 1 13h8l1-13M10 11v5m4-5v5"/></svg>`;
+  botao.addEventListener("click", (evento) => {
+    evento.preventDefault();
+    evento.stopPropagation();
+    const dialogo = obterDialogoExclusao();
+    dialogo.publicacaoPendente = { tipo, id, elemento };
+    dialogo.querySelector(".publication-delete-feedback").textContent = "";
+    dialogo.showModal();
+  }, { signal: pageEvents.signal });
+  elemento.appendChild(botao);
+}
+
 if (boxId) {
   if (linkAlbum) linkAlbum.href = `/boxes/${boxId}/album`;
   if (linkDepoimentos) linkDepoimentos.href = `/boxes/${boxId}/depoimentos`;
@@ -196,11 +278,14 @@ async function carregarFotos() {
   }
 
   albumGrid.innerHTML = "";
+  const podeModerar = await permissaoModeracaoPromise;
 
   const resposta = await fetch(`/api/boxes/${boxId}/fotos`);
   const fotos = await resposta.json();
 
   fotos.forEach(function (foto) {
+    const publicacao = document.createElement("div");
+    publicacao.className = "album-publication";
     const link = document.createElement("a");
     link.href = `/api/fotos/${foto.id}/arquivo`;
     link.target = "_blank";
@@ -210,7 +295,9 @@ async function carregarFotos() {
     imagem.alt = `Foto compartilhada por ${foto.nome}`;
 
     link.appendChild(imagem);
-    albumGrid.appendChild(link);
+    publicacao.appendChild(link);
+    if (podeModerar) criarBotaoExclusao("fotos", foto.id, publicacao);
+    albumGrid.appendChild(publicacao);
   });
 }
 
@@ -300,6 +387,7 @@ async function carregarDepoimentos() {
   }
 
   testimonialsList.innerHTML = "";
+  const podeModerar = await permissaoModeracaoPromise;
 
   const resposta = await fetch(`/api/boxes/${boxId}/depoimentos`);
   const depoimentos = await resposta.json();
@@ -340,6 +428,7 @@ async function carregarDepoimentos() {
 
     article.appendChild(author);
     article.appendChild(message);
+    if (podeModerar) criarBotaoExclusao("depoimentos", depoimento.id, article);
 
     testimonialsList.appendChild(article);
   });
@@ -447,6 +536,7 @@ async function carregarMemorias() {
   }
 
   memoriesList.innerHTML = "";
+  const podeModerar = await permissaoModeracaoPromise;
 
   const resposta = await fetch(`/api/boxes/${boxId}/memorias`);
   const memorias = await resposta.json();
@@ -510,6 +600,7 @@ async function carregarMemorias() {
     body.appendChild(texto);
 
     article.appendChild(body);
+    if (podeModerar) criarBotaoExclusao("memorias", memoria.id, article);
     memoriesList.appendChild(article);
   });
 }

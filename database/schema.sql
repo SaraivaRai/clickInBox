@@ -17,7 +17,8 @@ CREATE TABLE boxes (
   imagem_zoom NUMERIC(4,2)
     CHECK (imagem_zoom IS NULL OR imagem_zoom BETWEEN 1 AND 3),
   cor_ambientacao VARCHAR(7)
-    CHECK (cor_ambientacao IS NULL OR cor_ambientacao ~ '^#[0-9A-Fa-f]{6}$')
+    CHECK (cor_ambientacao IS NULL OR cor_ambientacao ~ '^#[0-9A-Fa-f]{6}$'),
+  visivel_home BOOLEAN NOT NULL DEFAULT FALSE
 );
 
 CREATE TABLE usuarios (
@@ -37,7 +38,13 @@ CREATE TABLE depoimentos (
   box_id INTEGER NOT NULL REFERENCES boxes(id),
   usuario_id INTEGER NOT NULL REFERENCES usuarios(id),
   mensagem TEXT NOT NULL,
-  criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  excluido_em TIMESTAMPTZ,
+  excluido_por INTEGER REFERENCES usuarios(id),
+  CONSTRAINT depoimentos_exclusao_consistente CHECK (
+    (excluido_em IS NULL AND excluido_por IS NULL) OR
+    (excluido_em IS NOT NULL AND excluido_por IS NOT NULL)
+  )
 );
 
 CREATE TABLE fotos (
@@ -45,7 +52,13 @@ CREATE TABLE fotos (
   box_id INTEGER NOT NULL REFERENCES boxes(id),
   usuario_id INTEGER NOT NULL REFERENCES usuarios(id),
   arquivo VARCHAR(255) NOT NULL,
-  criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  excluido_em TIMESTAMPTZ,
+  excluido_por INTEGER REFERENCES usuarios(id),
+  CONSTRAINT fotos_exclusao_consistente CHECK (
+    (excluido_em IS NULL AND excluido_por IS NULL) OR
+    (excluido_em IS NOT NULL AND excluido_por IS NOT NULL)
+  )
 );
 
 CREATE TABLE memorias (
@@ -55,7 +68,13 @@ CREATE TABLE memorias (
   titulo VARCHAR(100) NOT NULL,
   texto TEXT NOT NULL,
   foto VARCHAR(255),
-  criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  excluido_em TIMESTAMPTZ,
+  excluido_por INTEGER REFERENCES usuarios(id),
+  CONSTRAINT memorias_exclusao_consistente CHECK (
+    (excluido_em IS NULL AND excluido_por IS NULL) OR
+    (excluido_em IS NOT NULL AND excluido_por IS NOT NULL)
+  )
 );
 
 CREATE TABLE sessoes (

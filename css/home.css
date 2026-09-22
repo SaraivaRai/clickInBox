@@ -125,6 +125,9 @@ body:has(.hero) .header-profile-photo {
   gap: 10px 8px;
   width: 100%;
 }
+.stories-demo-list {
+  margin-top: 10px;
+}
 .stories-list article {
   min-width: 0;
   overflow: hidden;
