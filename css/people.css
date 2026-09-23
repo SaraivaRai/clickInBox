@@ -27,6 +27,67 @@
   line-height: 1.4;
   color: var(--box-cor-texto-suave);
 }
+.people-ceremonialist {
+  flex: 0 1 auto;
+  width: fit-content;
+  max-width: calc(100% - 110px);
+  min-width: 0;
+}
+.people-ceremonialist-card {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 36px;
+  box-sizing: border-box;
+  padding: 2px 5px 2px 1px;
+  border: 1px solid var(--box-ambiente-borda, rgba(182, 123, 60, 0.28));
+  border-radius: 16px;
+  background: var(--box-ambiente-superficie, rgba(255, 255, 255, 0.34));
+  box-shadow: 0 4px 14px rgba(80, 55, 35, 0.04);
+}
+.people-ceremonialist-avatar {
+  display: grid;
+  flex: 0 0 34px;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  object-fit: cover;
+  border: 1px solid rgba(216, 142, 53, 0.72);
+  border-radius: 50%;
+  background: rgba(230, 147, 44, 0.12);
+  color: #9d672f;
+  font-size: 10px;
+  font-weight: 700;
+}
+.people-ceremonialist-info {
+  display: flex;
+  align-self: stretch;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+}
+.people-ceremonialist-info h2 {
+  display: -webkit-box;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  max-height: 19px;
+  margin: 0;
+  font-size: 9px;
+  line-height: 1.05;
+  font-weight: 700;
+  color: var(--box-cor-texto);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.people-ceremonialist-card .people-role {
+  padding: 1px 5px;
+  font-size: 8px;
+}
+.people-role.tag-cerimonialista {
+  background: var(--box-ambiente-mancha-2, rgba(198, 145, 97, 0.11));
+  color: var(--box-decor-deep, #76549a);
+}
 .people-protagonist {
   display: flex;
   align-items: center;

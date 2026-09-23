@@ -69,6 +69,11 @@
       </div>
     </section>
     <nav class="box-internal-nav" aria-label="Áreas da Box">
+      <a id="link-protagonista" href="#" class="box-internal-nav-item">
+        <img src="/assets/icons/Pessoas.png" alt="" />
+        <span>Protagonista</span>
+      </a>
+
       <a id="link-album" href="#" class="box-internal-nav-item is-active">
         <img src="/assets/icons/Festa.png" alt="" />
         <span>Festa</span>
@@ -84,10 +89,6 @@
         <span>Memórias</span>
       </a>
 
-      <a id="link-pessoas" href="#" class="box-internal-nav-item">
-        <img src="/assets/icons/Pessoas.png" alt="" />
-        <span>Pessoas</span>
-      </a>
     </nav>
 
     <main>
@@ -129,7 +130,12 @@
         </div>
         <div class="album-grid"></div>
         <!-- PESSOAS ESPECIAIS -->
-        <section class="box-participants album-participants">
+        <section
+          class="box-participants album-participants"
+          id="people-special-link"
+          role="link"
+          tabindex="0"
+        >
           <h2>
             <span aria-hidden="true">♡</span>
             Pessoas especiais nesta história

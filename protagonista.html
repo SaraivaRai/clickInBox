@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/css/style.css" />
+    <link rel="icon" type="image/png" href="/assets/icons/icon-192.png" />
+    <title>Protagonista | Click In Box</title>
+  </head>
+  <body>
+    <header>
+      <a href="/" class="header-logo">
+        <img src="/assets/logo/logo.png" alt="Click In Box" />
+      </a>
+      <div class="header-account" id="header-account">
+        <button type="button" id="btn-login">Entrar</button>
+      </div>
+    </header>
+
+    <section class="box-internal-hero">
+      <div class="box-hero-photo">
+        <img id="box-imagem-principal" class="box-hero-image" src="" alt="" />
+      </div>
+      <div class="box-hero-overlay">
+        <span class="box-hero-heart" aria-hidden="true">♡</span>
+        <div class="box-internal-music">
+          <audio id="box-musica">
+            <source id="box-musica-source" src="" type="audio/mpeg" />
+            Seu navegador não suporta reprodução de áudio.
+          </audio>
+          <button type="button" class="music-play-button" id="music-play-button" aria-label="Reproduzir música">▶</button>
+          <span class="box-internal-music-label">Nossa Música</span>
+        </div>
+        <div class="box-info box-return-trigger" role="link" tabindex="0" aria-label="Voltar para a Box">
+          <img id="box-apresentacao-imagem" class="box-presentation-art" src="" alt="" hidden />
+          <h1 id="box-nome"></h1>
+          <div class="box-event-line"><span></span><p id="box-evento">15 anos</p><span></span></div>
+          <blockquote>“Alguns momentos merecem durar mais que uma noite.”</blockquote>
+          <span class="box-hero-small-heart" aria-hidden="true">♥</span>
+        </div>
+      </div>
+    </section>
+
+    <nav class="box-internal-nav" aria-label="Áreas da Box">
+      <a id="link-protagonista" href="#" class="box-internal-nav-item is-active"><img src="/assets/icons/Pessoas.png" alt="" /><span>Protagonista</span></a>
+      <a id="link-album" href="#" class="box-internal-nav-item"><img src="/assets/icons/Festa.png" alt="" /><span>Festa</span></a>
+      <a id="link-depoimentos" href="#" class="box-internal-nav-item"><img src="/assets/icons/Depoimento.png" alt="" /><span>Depoimentos</span></a>
+      <a id="link-memorias" href="#" class="box-internal-nav-item"><img src="/assets/icons/Memoria.png" alt="" /><span>Memórias</span></a>
+    </nav>
+
+    <main>
+      <section class="memories protagonist">
+        <div class="memories-header protagonist-header">
+          <div class="memories-heading">
+            <h1>Protagonista</h1>
+            <p>Um olhar de quem vive esta história</p>
+          </div>
+          <button id="protagonist-create-button" class="memory-create-button protagonist-create-button" type="button" hidden>Adicionar publicação</button>
+          <a id="box-return" class="box-return" href="#" aria-label="Voltar para a Box"></a>
+        </div>
+
+        <p id="protagonist-loading" class="protagonist-state">Carregando publicações...</p>
+        <div id="protagonist-grid" class="protagonist-grid"></div>
+        <p id="protagonist-empty" class="protagonist-state" hidden>Ainda não há publicações nesta gaveta.</p>
+      </section>
+    </main>
+
+    <dialog
+      id="protagonist-create-dialog"
+      class="protagonist-create-dialog"
+      aria-labelledby="protagonist-create-title"
+    >
+      <div class="protagonist-create-panel">
+        <button
+          id="protagonist-create-close"
+          class="protagonist-create-close"
+          type="button"
+          aria-label="Fechar"
+        >
+          ×
+        </button>
+        <h2 id="protagonist-create-title">Adicionar publicação</h2>
+        <form id="protagonist-form" class="memory-form protagonist-form">
+          <div class="memory-actions protagonist-photo-actions">
+            <label id="protagonist-photo-label" for="protagonist-photo" tabindex="0">Escolher foto</label>
+            <input id="protagonist-photo" name="foto" type="file" accept="image/*" required />
+            <p id="protagonist-file-feedback"></p>
+          </div>
+          <label class="sr-only" for="protagonist-title">Título</label>
+          <input id="protagonist-title" name="titulo" type="text" maxlength="150" placeholder="Título da publicação" required />
+          <label class="sr-only" for="protagonist-caption">Legenda opcional</label>
+          <textarea id="protagonist-caption" name="legenda" rows="5" placeholder="Legenda (opcional)"></textarea>
+          <div class="memory-actions protagonist-form-actions">
+            <button id="protagonist-form-cancel" type="button">Cancelar</button>
+            <button id="protagonist-submit" type="submit">Publicar</button>
+            <p id="protagonist-feedback" role="alert"></p>
+          </div>
+        </form>
+      </div>
+    </dialog>
+
+    <dialog id="protagonist-overlay" class="protagonist-overlay" aria-labelledby="protagonist-overlay-title">
+      <div class="protagonist-overlay-panel">
+        <button type="button" class="protagonist-overlay-close" aria-label="Fechar">×</button>
+        <img class="protagonist-overlay-image" src="" alt="" />
+        <div class="protagonist-overlay-copy">
+          <h2 id="protagonist-overlay-title"></h2>
+          <p class="protagonist-overlay-caption"></p>
+          <p class="protagonist-overlay-author"></p>
+        </div>
+      </div>
+    </dialog>
+
+    <script src="/js/app.js"></script>
+  </body>
+</html>

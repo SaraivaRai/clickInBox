@@ -26,6 +26,15 @@ const upload = multer({
   },
 });
 
+const protagonistUpload = multer({
+  dest: "uploads/",
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: function (req, file, cb) {
+    if (file.mimetype.startsWith("image/")) return cb(null, true);
+    cb(new Error("Apenas imagens são permitidas"));
+  },
+});
+
 const adminUpload = multer({
   dest: "uploads/",
   limits: { fileSize: 30 * 1024 * 1024, files: 3 },
@@ -208,13 +217,39 @@ async function autenticarUsuario(req, res, next) {
   next();
 }
 
+function obterDestinoLogin(req) {
+  if (req.conviteBoxId && req.params.token) {
+    const retorno = `/convite/${encodeURIComponent(req.params.token)}`;
+    return `/boxes/${req.conviteBoxId}?retorno=${encodeURIComponent(retorno)}`;
+  }
+
+  return `/login.html?retorno=${encodeURIComponent(req.originalUrl)}`;
+}
+
+async function identificarBoxDoConvite(req, res, next) {
+  try {
+    const resultado = await pool.query(
+      "SELECT box_id FROM convites WHERE token = $1",
+      [req.params.token],
+    );
+
+    if (resultado.rows.length === 0) {
+      return res.status(404).send("Convite inválido.");
+    }
+
+    req.conviteBoxId = resultado.rows[0].box_id;
+    next();
+  } catch (erro) {
+    console.error(erro);
+    res.status(500).send("Erro interno do servidor.");
+  }
+}
+
 async function autenticarPagina(req, res, next) {
   const tokenSessao = obterCookie(req, "clickinbox_session");
 
   if (!tokenSessao) {
-    return res.redirect(
-      `/login.html?retorno=${encodeURIComponent(req.originalUrl)}`,
-    );
+    return res.redirect(obterDestinoLogin(req));
   }
 
   const resultado = await pool.query(
@@ -230,9 +265,7 @@ async function autenticarPagina(req, res, next) {
   if (resultado.rows.length === 0) {
     res.clearCookie("clickinbox_session");
 
-    return res.redirect(
-      `/login.html?retorno=${encodeURIComponent(req.originalUrl)}`,
-    );
+    return res.redirect(obterDestinoLogin(req));
   }
 
   return autenticarUsuario(req, res, next);
@@ -317,6 +350,10 @@ function papelPodeModerarPublicacoes(papel) {
   return papel === "protagonista" || papel === "adm";
 }
 
+function papelPodePublicarNaProtagonista(papel) {
+  return papel === "protagonista" || papel === "mae" || papel === "adm";
+}
+
 app.get(
   "/boxes/:boxId/memorias",
   autenticarPagina,
@@ -332,6 +369,15 @@ app.get(
   autorizarBox,
   function (req, res) {
     res.sendFile(__dirname + "/pessoas.html");
+  },
+);
+
+app.get(
+  "/boxes/:boxId/protagonista",
+  autenticarPagina,
+  autorizarBox,
+  function (req, res) {
+    res.sendFile(__dirname + "/protagonista.html");
   },
 );
 
@@ -409,8 +455,9 @@ app.get(
           "WHEN 'mae' THEN 2 " +
           "WHEN 'pai' THEN 3 " +
           "WHEN 'coautora' THEN 4 " +
-          "WHEN 'convidado' THEN 5 " +
-          "ELSE 6 END, " +
+          "WHEN 'cerimonialista' THEN 5 " +
+          "WHEN 'convidado' THEN 6 " +
+          "ELSE 7 END, " +
           "usuarios.nome ASC",
         [boxId],
       );
@@ -438,7 +485,7 @@ app.get("/api/boxes/:boxId/participantes", async function (req, res) {
        JOIN usuarios_boxes
          ON usuarios.id = usuarios_boxes.usuario_id
        WHERE usuarios_boxes.box_id = $1
-         AND usuarios_boxes.papel IN ('protagonista', 'mae', 'pai', 'coautora')
+         AND usuarios_boxes.papel IN ('protagonista', 'mae', 'pai', 'coautora', 'cerimonialista')
        ORDER BY usuarios.nome ASC`,
       [boxId],
     );
@@ -632,6 +679,117 @@ app.get("/api/fotos/:id/arquivo", autenticarUsuario, async function (req, res) {
     });
   }
 });
+
+app.get(
+  "/api/boxes/:boxId/protagonista",
+  autenticarUsuario,
+  autorizarBox,
+  async function (req, res) {
+    try {
+      const resultado = await pool.query(
+        `SELECT publicacoes_protagonista.id,
+                publicacoes_protagonista.titulo,
+                publicacoes_protagonista.legenda,
+                publicacoes_protagonista.criado_em,
+                usuarios.nome AS autor_nome,
+                usuarios_boxes.papel AS autor_papel
+         FROM publicacoes_protagonista
+         JOIN usuarios ON usuarios.id = publicacoes_protagonista.usuario_id
+         JOIN usuarios_boxes
+           ON usuarios_boxes.usuario_id = publicacoes_protagonista.usuario_id
+          AND usuarios_boxes.box_id = publicacoes_protagonista.box_id
+         WHERE publicacoes_protagonista.box_id = $1
+           AND publicacoes_protagonista.excluido_em IS NULL
+         ORDER BY publicacoes_protagonista.criado_em DESC,
+                  publicacoes_protagonista.id DESC`,
+        [req.params.boxId],
+      );
+      res.json(resultado.rows);
+    } catch (erro) {
+      console.error(erro);
+      res.status(500).json({ erro: "Não foi possível listar as publicações" });
+    }
+  },
+);
+
+app.get(
+  "/api/boxes/:boxId/protagonista/:id/foto",
+  autenticarUsuario,
+  autorizarBox,
+  async function (req, res) {
+    try {
+      const resultado = await pool.query(
+        `SELECT foto FROM publicacoes_protagonista
+         WHERE id = $1 AND box_id = $2 AND excluido_em IS NULL`,
+        [req.params.id, req.params.boxId],
+      );
+      if (!resultado.rows.length) {
+        return res.status(404).json({ erro: "Publicação não encontrada" });
+      }
+      res.sendFile(resultado.rows[0].foto, { root: __dirname });
+    } catch (erro) {
+      console.error(erro);
+      res.status(500).json({ erro: "Não foi possível carregar a foto" });
+    }
+  },
+);
+
+app.post(
+  "/api/boxes/:boxId/protagonista",
+  autenticarUsuario,
+  autorizarBox,
+  async function (req, res) {
+    const papel = await obterPapelNaBox(req.usuario.id, req.params.boxId);
+    if (!papelPodePublicarNaProtagonista(papel)) {
+      return res.status(403).json({ erro: "Você não pode publicar nesta gaveta" });
+    }
+
+    protagonistUpload.single("foto")(req, res, async function (erroUpload) {
+      if (erroUpload) {
+        return res.status(400).json({
+          erro:
+            erroUpload.code === "LIMIT_FILE_SIZE"
+              ? "A imagem deve ter no máximo 10 MB"
+              : erroUpload.message,
+        });
+      }
+
+      const arquivo = req.file;
+      let caminhoProcessado = null;
+      try {
+        const titulo = String(req.body.titulo || "").trim();
+        const legenda = String(req.body.legenda || "").trim() || null;
+        if (!titulo || !arquivo) {
+          if (arquivo?.path && fs.existsSync(arquivo.path)) fs.unlinkSync(arquivo.path);
+          return res.status(400).json({ erro: "Título e foto são obrigatórios" });
+        }
+
+        const { fileTypeFromFile } = await import("file-type");
+        const tipoReal = await fileTypeFromFile(arquivo.path);
+        if (!tipoReal || !tipoReal.mime.startsWith("image/")) {
+          fs.unlinkSync(arquivo.path);
+          return res.status(400).json({ erro: "O arquivo enviado não é uma imagem válida" });
+        }
+
+        caminhoProcessado = await processarImagem(arquivo.path);
+        const resultado = await pool.query(
+          `INSERT INTO publicacoes_protagonista
+             (box_id, usuario_id, titulo, legenda, foto)
+           VALUES ($1, $2, $3, $4, $5)
+           RETURNING id, titulo, legenda, criado_em`,
+          [req.params.boxId, req.usuario.id, titulo, legenda, caminhoProcessado],
+        );
+        res.status(201).json(resultado.rows[0]);
+      } catch (erro) {
+        console.error(erro);
+        for (const caminho of [arquivo?.path, caminhoProcessado]) {
+          if (caminho && fs.existsSync(caminho)) fs.unlinkSync(caminho);
+        }
+        res.status(500).json({ erro: "Não foi possível publicar" });
+      }
+    });
+  },
+);
 
 app.post(
   "/api/boxes/:id/depoimentos",
@@ -1072,7 +1230,11 @@ app.get("/api/minhas-boxes", autenticarUsuario, async function (req, res) {
   res.json(resultado.rows);
 });
 
-app.get("/convite/:token", autenticarPagina, async function (req, res) {
+app.get(
+  "/convite/:token",
+  identificarBoxDoConvite,
+  autenticarPagina,
+  async function (req, res) {
   const token = req.params.token;
 
   try {
@@ -1188,6 +1350,7 @@ const CONVITES_PADRAO = [
   { rotulo: "Mãe", papel: "mae", limite: 1 },
   { rotulo: "Pai", papel: "pai", limite: 1 },
   { rotulo: "As 15", papel: "coautora", limite: 15 },
+  { rotulo: "Cerimonialista", papel: "cerimonialista", limite: 1 },
   { rotulo: "Convidados", papel: "convidado", limite: 500 },
 ];
 
@@ -1327,7 +1490,8 @@ app.get("/api/admin/boxes", autenticarUsuario, autorizarAdmin, async (req, res) 
     console.error(erro);
     res.status(500).json({ erro: "Não foi possível listar as Boxes" });
   }
-});
+  },
+);
 
 app.get("/api/boxes/:boxId/permissoes", autenticarUsuario, async function (req, res) {
   try {
@@ -1335,6 +1499,7 @@ app.get("/api/boxes/:boxId/permissoes", autenticarUsuario, async function (req, 
     res.json({
       papel,
       pode_moderar_publicacoes: papelPodeModerarPublicacoes(papel),
+      pode_publicar_protagonista: papelPodePublicarNaProtagonista(papel),
     });
   } catch (erro) {
     console.error(erro);
@@ -1399,6 +1564,7 @@ app.delete(
   autenticarUsuario,
   excluirPublicacaoLogicamente("depoimentos", "Depoimento"),
 );
+
 app.delete(
   "/api/boxes/:boxId/memorias/:id",
   autenticarUsuario,
@@ -1408,6 +1574,11 @@ app.delete(
   "/api/boxes/:boxId/fotos/:id",
   autenticarUsuario,
   excluirPublicacaoLogicamente("fotos", "Foto"),
+);
+app.delete(
+  "/api/boxes/:boxId/protagonista/:id",
+  autenticarUsuario,
+  excluirPublicacaoLogicamente("publicacoes_protagonista", "Publicação"),
 );
 
 app.post(

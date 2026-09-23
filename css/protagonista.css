@@ -1,0 +1,212 @@
+/* A estrutura da página e do formulário reutiliza o padrão de Memórias. */
+
+.protagonist-create-button[hidden] {
+  display: none;
+}
+
+.protagonist-create-dialog {
+  width: min(calc(100vw - 32px), 390px);
+  max-height: min(84dvh, 620px);
+  padding: 0;
+  overflow: auto;
+  border: 0;
+  border-radius: 18px;
+  background: var(--box-ambiente-superficie, #fff);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.25);
+}
+
+.protagonist-create-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.58);
+  backdrop-filter: blur(4px);
+}
+
+.protagonist-create-panel {
+  position: relative;
+  padding: 30px 22px 22px;
+}
+
+.protagonist-create-panel h2 {
+  margin: 0 36px 18px 0;
+  color: var(--box-cor-texto);
+  font-family: "Cormorant Garamond", serif;
+  font-size: 26px;
+  font-weight: 500;
+  line-height: 1.1;
+}
+
+.protagonist-create-close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--box-cor-texto);
+  cursor: pointer;
+  font-size: 30px;
+  line-height: 1;
+}
+
+.protagonist-create-panel .protagonist-form {
+  margin: 0;
+}
+
+.protagonist-photo-actions {
+  justify-content: flex-start;
+  margin-bottom: 2px;
+  padding-top: 0;
+  padding-bottom: 8px;
+  border-top: 0;
+  border-bottom: 1px solid rgba(182, 123, 60, 0.1);
+}
+
+#protagonist-file-feedback {
+  margin: 0;
+  font-size: 9px;
+  color: var(--box-cor-texto-suave);
+}
+
+.protagonist-form-actions {
+  justify-content: flex-end;
+}
+
+#protagonist-feedback {
+  flex-basis: 100%;
+  min-height: 1.2em;
+  margin: 2px 2px 0;
+  color: var(--box-cor-texto-suave);
+  font-size: 9px;
+  line-height: 1.35;
+  text-align: right;
+}
+
+body.protagonist-create-open {
+  position: fixed;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* O mosaico permanece próprio da Protagonista. */
+
+.protagonist-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+  width: 100%;
+}
+
+.protagonist-publication {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 1 / 1;
+  border-radius: 0.9rem;
+  background: var(--box-ambiente-card-2, #f5e5d9);
+}
+
+.protagonist-publication:nth-child(5n + 1),
+.protagonist-publication:nth-child(5n + 4) {
+  aspect-ratio: 4 / 5;
+}
+
+.protagonist-publication-open {
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.protagonist-publication img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.protagonist-publication-title {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  padding: 2rem 0.75rem 0.7rem;
+  background: linear-gradient(transparent, rgba(30, 20, 15, 0.72));
+  color: white;
+  font-family: "Cormorant Garamond", serif;
+  font-size: 1.15rem;
+  text-align: left;
+}
+
+.protagonist-state {
+  padding: 2rem 0;
+  text-align: center;
+}
+
+/* O overlay de visualização existente permanece isolado. */
+
+.protagonist-overlay {
+  width: min(94vw, 820px);
+  max-height: 92dvh;
+  padding: 0;
+  overflow: auto;
+  border: 0;
+  border-radius: 1rem;
+  background: var(--box-ambiente-superficie, #fffaf4);
+}
+
+.protagonist-overlay::backdrop {
+  background: rgba(28, 20, 17, 0.72);
+}
+
+.protagonist-overlay-panel {
+  position: relative;
+}
+
+.protagonist-overlay-image {
+  display: block;
+  width: 100%;
+  max-height: 68dvh;
+  object-fit: contain;
+  background: #171311;
+}
+
+.protagonist-overlay-copy {
+  padding: 1rem 1.15rem 1.3rem;
+}
+
+.protagonist-overlay-copy h2 {
+  margin: 0;
+  font-family: "Cormorant Garamond", serif;
+  font-size: 2rem;
+}
+
+.protagonist-overlay-caption {
+  white-space: pre-wrap;
+}
+
+.protagonist-overlay-author {
+  margin-bottom: 0;
+  color: var(--box-texto-secundario, #8a6b5d);
+  font-size: 0.86rem;
+}
+
+.protagonist-overlay-close {
+  position: absolute;
+  z-index: 2;
+  top: 0.65rem;
+  right: 0.65rem;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  cursor: pointer;
+  font-size: 1.65rem;
+  line-height: 1;
+}
+
+body.protagonist-overlay-open {
+  overflow: hidden;
+}

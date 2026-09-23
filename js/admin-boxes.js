@@ -1,7 +1,7 @@
 const app = document.getElementById("admin-app");
 const editMatch = location.pathname.match(/^\/admin\/boxes\/(\d+)\/editar\/?$/);
 const creating = location.pathname.endsWith("/nova");
-const inviteLabels = { protagonista: "Protagonista", mae: "Mãe", pai: "Pai", coautora: "As 15", convidado: "Convidados" };
+const inviteLabels = { protagonista: "Protagonista", mae: "Mãe", pai: "Pai", coautora: "As 15", cerimonialista: "Cerimonialista", convidado: "Convidados" };
 
 async function api(url, options = {}) {
   const response = await fetch(url, options);
