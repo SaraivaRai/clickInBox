@@ -74,7 +74,8 @@ body:has(.box-participants) .footer img {
   height: auto;
 }
 
-.box-participants .participant img {
+.box-participants .participant img,
+.box-participants .participant-avatar-fallback {
   display: block;
 
   width: 44px;
@@ -90,6 +91,18 @@ body:has(.box-participants) .footer img {
   box-shadow:
     0 2px 6px rgba(82, 51, 32, 0.08),
     0 0 0 2px rgba(255, 255, 255, 0.55);
+}
+
+.box-participants .participant-avatar-fallback {
+  display: grid;
+  place-items: center;
+
+  background: var(--box-cor-4);
+  color: #fff;
+
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1;
 }
 
 .box-participants .participant-info {

@@ -158,7 +158,8 @@ function initializeBoxPage() {
   if (boxId) {
     if (linkAlbum) linkAlbum.href = `/boxes/${boxId}/album`;
     if (linkDepoimentos) linkDepoimentos.href = `/boxes/${boxId}/depoimentos`;
-    if (linkProtagonista) linkProtagonista.href = `/boxes/${boxId}/protagonista`;
+    if (linkProtagonista)
+      linkProtagonista.href = `/boxes/${boxId}/protagonista`;
     if (linkMemorias) linkMemorias.href = `/boxes/${boxId}/memorias`;
     if (boxReturn) boxReturn.href = `/boxes/${boxId}`;
   }
@@ -832,234 +833,243 @@ function initializeBoxPage() {
   }
 
   async function carregarPessoas() {
-  const protagonistGrid = document.querySelector("#protagonist-grid");
+    const protagonistGrid = document.querySelector("#protagonist-grid");
 
-  if (protagonistGrid) {
-    const loading = document.querySelector("#protagonist-loading");
-    const empty = document.querySelector("#protagonist-empty");
-    const createButton = document.querySelector("#protagonist-create-button");
-    const form = document.querySelector("#protagonist-form");
-    const createDialog = document.querySelector("#protagonist-create-dialog");
-    const createCloseButton = document.querySelector("#protagonist-create-close");
-    const cancelButton = document.querySelector("#protagonist-form-cancel");
-    const submitButton = document.querySelector("#protagonist-submit");
-    const feedback = document.querySelector("#protagonist-feedback");
-    const photoInput = document.querySelector("#protagonist-photo");
-    const photoLabel = document.querySelector("#protagonist-photo-label");
-    const fileFeedback = document.querySelector("#protagonist-file-feedback");
-    const overlay = document.querySelector("#protagonist-overlay");
-    const overlayImage = overlay.querySelector(".protagonist-overlay-image");
-    const overlayTitle = overlay.querySelector("#protagonist-overlay-title");
-    const overlayCaption = overlay.querySelector(".protagonist-overlay-caption");
-    const overlayAuthor = overlay.querySelector(".protagonist-overlay-author");
-    let overlayOpener = null;
-    let createOpener = null;
-    let creationScrollY = 0;
+    if (protagonistGrid) {
+      const loading = document.querySelector("#protagonist-loading");
+      const empty = document.querySelector("#protagonist-empty");
+      const createButton = document.querySelector("#protagonist-create-button");
+      const form = document.querySelector("#protagonist-form");
+      const createDialog = document.querySelector("#protagonist-create-dialog");
+      const createCloseButton = document.querySelector(
+        "#protagonist-create-close",
+      );
+      const cancelButton = document.querySelector("#protagonist-form-cancel");
+      const submitButton = document.querySelector("#protagonist-submit");
+      const feedback = document.querySelector("#protagonist-feedback");
+      const photoInput = document.querySelector("#protagonist-photo");
+      const photoLabel = document.querySelector("#protagonist-photo-label");
+      const fileFeedback = document.querySelector("#protagonist-file-feedback");
+      const overlay = document.querySelector("#protagonist-overlay");
+      const overlayImage = overlay.querySelector(".protagonist-overlay-image");
+      const overlayTitle = overlay.querySelector("#protagonist-overlay-title");
+      const overlayCaption = overlay.querySelector(
+        ".protagonist-overlay-caption",
+      );
+      const overlayAuthor = overlay.querySelector(
+        ".protagonist-overlay-author",
+      );
+      let overlayOpener = null;
+      let createOpener = null;
+      let creationScrollY = 0;
 
-    function fecharOverlay() {
-      overlay.close();
-      document.body.classList.remove("protagonist-overlay-open");
-      overlayOpener?.focus();
-    }
-
-    function abrirOverlay(publicacao, opener) {
-      overlayOpener = opener;
-      overlayImage.src = `/api/boxes/${boxId}/protagonista/${publicacao.id}/foto`;
-      overlayImage.alt = publicacao.titulo;
-      overlayTitle.textContent = publicacao.titulo;
-      overlayCaption.textContent = publicacao.legenda || "";
-      overlayCaption.hidden = !publicacao.legenda;
-      overlayAuthor.textContent = `Publicado por ${publicacao.autor_nome}`;
-      document.body.classList.add("protagonist-overlay-open");
-      overlay.showModal();
-    }
-
-    overlay.querySelector(".protagonist-overlay-close").addEventListener(
-      "click",
-      fecharOverlay,
-      { signal: pageEvents.signal },
-    );
-    overlay.addEventListener(
-      "click",
-      (event) => {
-        if (event.target === overlay) fecharOverlay();
-      },
-      { signal: pageEvents.signal },
-    );
-    overlay.addEventListener(
-      "close",
-      () => document.body.classList.remove("protagonist-overlay-open"),
-      { signal: pageEvents.signal },
-    );
-
-    async function carregarPublicacoesProtagonista() {
-      loading.hidden = false;
-      empty.hidden = true;
-      protagonistGrid.innerHTML = "";
-      try {
-        const [resposta, podeModerar] = await Promise.all([
-          fetch(`/api/boxes/${boxId}/protagonista`, {
-            signal: pageEvents.signal,
-          }),
-          permissaoModeracaoPromise,
-        ]);
-        if (!resposta.ok) throw new Error("Não foi possível carregar as publicações.");
-        const publicacoes = await resposta.json();
-        for (const publicacao of publicacoes) {
-          const article = document.createElement("article");
-          article.className = "protagonist-publication";
-          const openButton = document.createElement("button");
-          openButton.type = "button";
-          openButton.className = "protagonist-publication-open";
-          openButton.setAttribute("aria-label", `Abrir ${publicacao.titulo}`);
-          const image = document.createElement("img");
-          image.src = `/api/boxes/${boxId}/protagonista/${publicacao.id}/foto`;
-          image.alt = publicacao.titulo;
-          image.loading = "lazy";
-          const title = document.createElement("span");
-          title.className = "protagonist-publication-title";
-          title.textContent = publicacao.titulo;
-          openButton.append(image, title);
-          openButton.addEventListener(
-            "click",
-            () => abrirOverlay(publicacao, openButton),
-            { signal: pageEvents.signal },
-          );
-          article.appendChild(openButton);
-          if (podeModerar) {
-            criarBotaoExclusao("protagonista", publicacao.id, article);
-          }
-          protagonistGrid.appendChild(article);
-        }
-        empty.hidden = publicacoes.length !== 0;
-      } catch (erro) {
-        if (erro.name !== "AbortError") {
-          empty.textContent = erro.message;
-          empty.hidden = false;
-        }
-      } finally {
-        loading.hidden = true;
+      function fecharOverlay() {
+        overlay.close();
+        document.body.classList.remove("protagonist-overlay-open");
+        overlayOpener?.focus();
       }
-    }
 
-    permissoesBoxPromise.then((permissoes) => {
-      if (permissoes.pode_publicar_protagonista === true) {
-        createButton.hidden = false;
+      function abrirOverlay(publicacao, opener) {
+        overlayOpener = opener;
+        overlayImage.src = `/api/boxes/${boxId}/protagonista/${publicacao.id}/foto`;
+        overlayImage.alt = publicacao.titulo;
+        overlayTitle.textContent = publicacao.titulo;
+        overlayCaption.textContent = publicacao.legenda || "";
+        overlayCaption.hidden = !publicacao.legenda;
+        overlayAuthor.textContent = `Publicado por ${publicacao.autor_nome}`;
+        document.body.classList.add("protagonist-overlay-open");
+        overlay.showModal();
       }
-    });
 
-    function restaurarCriacao() {
-      form.reset();
-      feedback.textContent = "";
-      fileFeedback.textContent = "";
-      photoLabel.textContent = "Escolher foto";
-      photoLabel.classList.remove("has-photo");
-      createButton.hidden = false;
-      document.body.classList.remove("protagonist-create-open");
-      document.body.style.top = "";
-      window.scrollTo(0, creationScrollY);
-      createOpener?.focus();
-    }
+      overlay
+        .querySelector(".protagonist-overlay-close")
+        .addEventListener("click", fecharOverlay, {
+          signal: pageEvents.signal,
+        });
+      overlay.addEventListener(
+        "click",
+        (event) => {
+          if (event.target === overlay) fecharOverlay();
+        },
+        { signal: pageEvents.signal },
+      );
+      overlay.addEventListener(
+        "close",
+        () => document.body.classList.remove("protagonist-overlay-open"),
+        { signal: pageEvents.signal },
+      );
 
-    function fecharCriacao() {
-      if (createDialog.open) createDialog.close();
-    }
-
-    photoInput.addEventListener(
-      "change",
-      () => {
-        const arquivo = photoInput.files[0];
-        photoLabel.textContent = arquivo ? "✓ Foto escolhida" : "Escolher foto";
-        photoLabel.classList.toggle("has-photo", Boolean(arquivo));
-        fileFeedback.textContent = arquivo ? arquivo.name : "";
-      },
-      { signal: pageEvents.signal },
-    );
-    photoLabel.addEventListener(
-      "keydown",
-      (event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          photoInput.click();
-        }
-      },
-      { signal: pageEvents.signal },
-    );
-
-    createButton.addEventListener(
-      "click",
-      () => {
-        createOpener = createButton;
-        creationScrollY = window.scrollY;
-        createButton.hidden = true;
-        document.body.style.top = `-${creationScrollY}px`;
-        document.body.classList.add("protagonist-create-open");
-        createDialog.showModal();
-        photoLabel.focus();
-      },
-      { signal: pageEvents.signal },
-    );
-    createCloseButton.addEventListener("click", fecharCriacao, {
-      signal: pageEvents.signal,
-    });
-    createDialog.addEventListener(
-      "click",
-      (event) => {
-        if (event.target === createDialog) fecharCriacao();
-      },
-      { signal: pageEvents.signal },
-    );
-    createDialog.addEventListener(
-      "cancel",
-      (event) => {
-        if (submitButton.disabled) event.preventDefault();
-      },
-      { signal: pageEvents.signal },
-    );
-    createDialog.addEventListener("close", restaurarCriacao, {
-      signal: pageEvents.signal,
-    });
-    cancelButton.addEventListener(
-      "click",
-      () => {
-        fecharCriacao();
-      },
-      { signal: pageEvents.signal },
-    );
-    form.addEventListener(
-      "submit",
-      async (event) => {
-        event.preventDefault();
-        if (submitButton.disabled) return;
-        feedback.textContent = "";
-        submitButton.disabled = true;
-        submitButton.textContent = "Publicando...";
+      async function carregarPublicacoesProtagonista() {
+        loading.hidden = false;
+        empty.hidden = true;
+        protagonistGrid.innerHTML = "";
         try {
-          const resposta = await fetch(`/api/boxes/${boxId}/protagonista`, {
-            method: "POST",
-            body: new FormData(form),
-            signal: pageEvents.signal,
-          });
-          if (!resposta.ok) {
-            const dados = await resposta.json().catch(() => ({}));
-            throw new Error(dados.erro || "Não foi possível publicar.");
+          const [resposta, podeModerar] = await Promise.all([
+            fetch(`/api/boxes/${boxId}/protagonista`, {
+              signal: pageEvents.signal,
+            }),
+            permissaoModeracaoPromise,
+          ]);
+          if (!resposta.ok)
+            throw new Error("Não foi possível carregar as publicações.");
+          const publicacoes = await resposta.json();
+          for (const publicacao of publicacoes) {
+            const article = document.createElement("article");
+            article.className = "protagonist-publication";
+            const openButton = document.createElement("button");
+            openButton.type = "button";
+            openButton.className = "protagonist-publication-open";
+            openButton.setAttribute("aria-label", `Abrir ${publicacao.titulo}`);
+            const image = document.createElement("img");
+            image.src = `/api/boxes/${boxId}/protagonista/${publicacao.id}/foto`;
+            image.alt = publicacao.titulo;
+            image.loading = "lazy";
+            const title = document.createElement("span");
+            title.className = "protagonist-publication-title";
+            title.textContent = publicacao.titulo;
+            openButton.append(image, title);
+            openButton.addEventListener(
+              "click",
+              () => abrirOverlay(publicacao, openButton),
+              { signal: pageEvents.signal },
+            );
+            article.appendChild(openButton);
+            if (podeModerar) {
+              criarBotaoExclusao("protagonista", publicacao.id, article);
+            }
+            protagonistGrid.appendChild(article);
           }
-          await carregarPublicacoesProtagonista();
-          fecharCriacao();
+          empty.hidden = publicacoes.length !== 0;
         } catch (erro) {
-          if (erro.name !== "AbortError") feedback.textContent = erro.message;
+          if (erro.name !== "AbortError") {
+            empty.textContent = erro.message;
+            empty.hidden = false;
+          }
         } finally {
-          submitButton.disabled = false;
-          submitButton.textContent = "Publicar";
+          loading.hidden = true;
         }
-      },
-      { signal: pageEvents.signal },
-    );
+      }
 
-    carregarPublicacoesProtagonista();
-  }
+      permissoesBoxPromise.then((permissoes) => {
+        if (permissoes.pode_publicar_protagonista === true) {
+          createButton.hidden = false;
+        }
+      });
 
-  const peopleList = document.querySelector(".people-list");
+      function restaurarCriacao() {
+        form.reset();
+        feedback.textContent = "";
+        fileFeedback.textContent = "";
+        photoLabel.textContent = "Escolher foto";
+        photoLabel.classList.remove("has-photo");
+        createButton.hidden = false;
+        document.body.classList.remove("protagonist-create-open");
+        document.body.style.top = "";
+        window.scrollTo(0, creationScrollY);
+        createOpener?.focus();
+      }
+
+      function fecharCriacao() {
+        if (createDialog.open) createDialog.close();
+      }
+
+      photoInput.addEventListener(
+        "change",
+        () => {
+          const arquivo = photoInput.files[0];
+          photoLabel.textContent = arquivo
+            ? "✓ Foto escolhida"
+            : "Escolher foto";
+          photoLabel.classList.toggle("has-photo", Boolean(arquivo));
+          fileFeedback.textContent = arquivo ? arquivo.name : "";
+        },
+        { signal: pageEvents.signal },
+      );
+      photoLabel.addEventListener(
+        "keydown",
+        (event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            photoInput.click();
+          }
+        },
+        { signal: pageEvents.signal },
+      );
+
+      createButton.addEventListener(
+        "click",
+        () => {
+          createOpener = createButton;
+          creationScrollY = window.scrollY;
+          createButton.hidden = true;
+          document.body.style.top = `-${creationScrollY}px`;
+          document.body.classList.add("protagonist-create-open");
+          createDialog.showModal();
+          photoLabel.focus();
+        },
+        { signal: pageEvents.signal },
+      );
+      createCloseButton.addEventListener("click", fecharCriacao, {
+        signal: pageEvents.signal,
+      });
+      createDialog.addEventListener(
+        "click",
+        (event) => {
+          if (event.target === createDialog) fecharCriacao();
+        },
+        { signal: pageEvents.signal },
+      );
+      createDialog.addEventListener(
+        "cancel",
+        (event) => {
+          if (submitButton.disabled) event.preventDefault();
+        },
+        { signal: pageEvents.signal },
+      );
+      createDialog.addEventListener("close", restaurarCriacao, {
+        signal: pageEvents.signal,
+      });
+      cancelButton.addEventListener(
+        "click",
+        () => {
+          fecharCriacao();
+        },
+        { signal: pageEvents.signal },
+      );
+      form.addEventListener(
+        "submit",
+        async (event) => {
+          event.preventDefault();
+          if (submitButton.disabled) return;
+          feedback.textContent = "";
+          submitButton.disabled = true;
+          submitButton.textContent = "Publicando...";
+          try {
+            const resposta = await fetch(`/api/boxes/${boxId}/protagonista`, {
+              method: "POST",
+              body: new FormData(form),
+              signal: pageEvents.signal,
+            });
+            if (!resposta.ok) {
+              const dados = await resposta.json().catch(() => ({}));
+              throw new Error(dados.erro || "Não foi possível publicar.");
+            }
+            await carregarPublicacoesProtagonista();
+            fecharCriacao();
+          } catch (erro) {
+            if (erro.name !== "AbortError") feedback.textContent = erro.message;
+          } finally {
+            submitButton.disabled = false;
+            submitButton.textContent = "Publicar";
+          }
+        },
+        { signal: pageEvents.signal },
+      );
+
+      carregarPublicacoesProtagonista();
+    }
+
+    const peopleList = document.querySelector(".people-list");
     if (!peopleList) return;
 
     const criarAvatar = (pessoa, classe) => {
@@ -1100,9 +1110,7 @@ function initializeBoxPage() {
     const resposta = await fetch(`/api/boxes/${boxId}/usuarios`);
     const pessoas = await resposta.json();
     const peopleProtagonist = document.querySelector("#people-protagonist");
-    const peopleCeremonialist = document.querySelector(
-      "#people-ceremonialist",
-    );
+    const peopleCeremonialist = document.querySelector("#people-ceremonialist");
     const protagonista = pessoas.find(
       (pessoa) => pessoa.papel === "protagonista",
     );
@@ -1154,8 +1162,7 @@ function initializeBoxPage() {
     pessoas
       .filter(
         (pessoa) =>
-          pessoa.papel !== "protagonista" &&
-          pessoa.papel !== "cerimonialista",
+          pessoa.papel !== "protagonista" && pessoa.papel !== "cerimonialista",
       )
       .forEach((pessoa) => {
         const article = document.createElement("article");
@@ -1198,12 +1205,27 @@ function initializeBoxPage() {
       const participante = document.createElement("div");
       participante.className = "participant";
 
-      let foto = null;
+      let foto;
 
       if (usuario.foto_perfil) {
         foto = document.createElement("img");
         foto.src = usuario.foto_perfil;
         foto.alt = `Foto de ${usuario.nome}`;
+      } else {
+        foto = document.createElement("div");
+        foto.className = "participant-avatar-fallback";
+        foto.textContent = usuario.nome
+          .trim()
+          .split(/\s+/)
+          .slice(0, 2)
+          .map((parte) => parte[0])
+          .join("")
+          .toUpperCase();
+        foto.setAttribute("role", "img");
+        foto.setAttribute(
+          "aria-label",
+          `${usuario.nome} não possui foto de perfil`,
+        );
       }
 
       const info = document.createElement("div");
@@ -1689,7 +1711,13 @@ function isBoxDestination(href) {
     parts[2] === persistentBoxId &&
     (parts.length === 3 ||
       (parts.length === 4 &&
-        ["album", "depoimentos", "memorias", "pessoas", "protagonista"].includes(parts[3])))
+        [
+          "album",
+          "depoimentos",
+          "memorias",
+          "pessoas",
+          "protagonista",
+        ].includes(parts[3])))
   );
 }
 
