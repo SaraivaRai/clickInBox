@@ -25,13 +25,20 @@ CREATE TABLE usuarios (
   id SERIAL PRIMARY KEY,
   nome VARCHAR(100) NOT NULL,
   email VARCHAR(255) NOT NULL UNIQUE,
-  oauth_provider VARCHAR(50) NOT NULL,
-  oauth_id VARCHAR(255) NOT NULL,
+  oauth_provider VARCHAR(50),
+  oauth_id VARCHAR(255),
   criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   foto_perfil TEXT,
   admin BOOLEAN NOT NULL DEFAULT FALSE,
-  UNIQUE (oauth_provider, oauth_id)
+  UNIQUE (oauth_provider, oauth_id),
+  CONSTRAINT usuarios_oauth_consistente CHECK (
+    (oauth_provider IS NULL AND oauth_id IS NULL) OR
+    (oauth_provider IS NOT NULL AND oauth_id IS NOT NULL)
+  )
 );
+
+CREATE UNIQUE INDEX usuarios_email_normalizado_unique
+  ON usuarios (LOWER(BTRIM(email)));
 
 CREATE TABLE depoimentos (
   id SERIAL PRIMARY KEY,
@@ -122,3 +129,22 @@ CREATE TABLE convites (
   CONSTRAINT convites_limite_usos_valido
     CHECK (limite_usos IS NULL OR limite_usos > 0)
 );
+
+CREATE TABLE acessos_orientados (
+  id SERIAL PRIMARY KEY,
+  box_id INTEGER NOT NULL REFERENCES boxes(id),
+  usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+  codigo_hash CHAR(64) NOT NULL UNIQUE,
+  expira_em TIMESTAMPTZ NOT NULL,
+  revogado_em TIMESTAMPTZ,
+  criado_por INTEGER NOT NULL REFERENCES usuarios(id),
+  criado_em TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  ultimo_uso_em TIMESTAMPTZ,
+  CONSTRAINT acessos_orientados_validade CHECK (expira_em > criado_em)
+);
+
+CREATE UNIQUE INDEX acessos_orientados_ativo_usuario_box_unique
+  ON acessos_orientados (usuario_id, box_id)
+  WHERE revogado_em IS NULL;
+
+CREATE INDEX acessos_orientados_box_idx ON acessos_orientados (box_id);

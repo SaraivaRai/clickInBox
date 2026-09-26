@@ -52,7 +52,12 @@ function formHtml(box = {}) {
       <section class="panel"><div class="field"><label for="musica">Música MP3 ${creating ? "(obrigatória)" : ""}</label><input id="musica" name="musica" type="file" accept="audio/mpeg,.mp3" ${creating ? "required" : ""}><span class="file-current">${box.musica ? `Atual: ${escapeHtml(box.musica)}` : ""}</span><audio id="music-preview" controls ${box.musica ? `src="${escapeHtml(box.musica)}"` : "hidden"}></audio></div></section>
       <div id="feedback" class="feedback"></div><div class="actions"><button type="submit">${creating ? "Criar Box" : "Salvar alterações"}</button></div>
     </form>
-    ${creating ? "" : `<section class="panel"><h2>Convites</h2><div id="invitations" class="invitations"></div></section><section class="panel"><h2>Demonstração como ADM</h2><p>O vínculo ADM permite publicar conteúdo sem consumir convites e não aparece em Pessoas Especiais.</p><div class="actions"><button id="join-adm" type="button">Participar como ADM</button><button id="clean-content" class="danger" type="button">Limpar meu conteúdo nesta Box</button><button id="leave-adm" class="secondary" type="button">Remover participação ADM</button></div></section>`}
+    ${creating ? "" : `<section class="panel"><h2>Convites</h2><div id="invitations" class="invitations"></div></section>
+      <section class="panel"><h2>Acesso orientado</h2><p class="hint">Cadastre uma pessoa para gerar um código de acesso sem Google.</p>
+        <form id="oriented-access-form" class="fields"><div class="field"><label for="oriented-name">Nome</label><input id="oriented-name" name="nome" maxlength="100" required></div><div class="field"><label for="oriented-email">E-mail</label><input id="oriented-email" name="email" type="email" maxlength="255" required></div><div class="actions field full"><button type="submit">Criar acesso orientado</button></div></form>
+        <div id="oriented-code" class="oriented-code" hidden></div><div id="oriented-feedback" class="feedback"></div><div id="oriented-access-list" class="oriented-access-list">Carregando…</div>
+      </section>
+      <section class="panel"><h2>Demonstração como ADM</h2><p>O vínculo ADM permite publicar conteúdo sem consumir convites e não aparece em Pessoas Especiais.</p><div class="actions"><button id="join-adm" type="button">Participar como ADM</button><button id="clean-content" class="danger" type="button">Limpar meu conteúdo nesta Box</button><button id="leave-adm" class="secondary" type="button">Remover participação ADM</button></div></section>`}
     <dialog id="confirm-dialog"><h2>Limpar conteúdo de demonstração?</h2><p>Serão removidos somente fotos, depoimentos e memórias criados pela sua conta nesta Box. Esta ação não pode ser desfeita.</p><div class="actions"><button id="cancel-clean" class="secondary">Cancelar</button><button id="confirm-clean" class="danger">Confirmar limpeza</button></div></dialog>`;
 }
 
@@ -82,6 +87,72 @@ function renderInvites(invites) {
   document.querySelectorAll("[data-copy]").forEach((button)=>button.addEventListener("click",async()=>{await navigator.clipboard.writeText(button.dataset.copy);button.textContent="Copiado";}));
 }
 
+function showOrientedCode(data) {
+  const box = document.getElementById("oriented-code");
+  box.hidden = false;
+  box.innerHTML = `<strong>Código gerado</strong><code>${escapeHtml(data.codigo)}</code><span>Válido até ${new Date(data.expira_em).toLocaleString("pt-BR")}. Copie agora: por segurança ele não será exibido novamente.</span><button type="button" id="copy-oriented-code">Copiar código</button>`;
+  document.getElementById("copy-oriented-code").onclick = async () => {
+    await navigator.clipboard.writeText(data.codigo);
+    document.getElementById("copy-oriented-code").textContent = "Copiado";
+  };
+}
+
+async function loadOrientedAccesses(boxId) {
+  const list = document.getElementById("oriented-access-list");
+  const accesses = await api(`/api/admin/boxes/${boxId}/acessos-orientados`);
+  list.innerHTML = accesses.length ? accesses.map((access) => {
+    const active = !access.revogado_em && new Date(access.expira_em) > new Date();
+    return `<article class="oriented-access">
+      <div><strong>${escapeHtml(access.nome)}</strong><span>${escapeHtml(access.email)}</span><small>${active ? `Ativo até ${new Date(access.expira_em).toLocaleDateString("pt-BR")}` : access.revogado_em ? "Revogado" : "Expirado"}</small></div>
+      <div class="actions"><button type="button" data-regenerate-access="${access.id}">Regenerar</button>${active ? `<button type="button" class="danger" data-revoke-access="${access.id}">Revogar</button>` : ""}</div>
+    </article>`;
+  }).join("") : "<p class=\"hint\">Nenhum acesso orientado criado.</p>";
+  list.querySelectorAll("[data-regenerate-access]").forEach((button) => {
+    button.onclick = async () => {
+      const data = await api(`/api/admin/boxes/${boxId}/acessos-orientados/${button.dataset.regenerateAccess}/regenerar`, { method: "POST" });
+      showOrientedCode(data);
+      await loadOrientedAccesses(boxId);
+    };
+  });
+  list.querySelectorAll("[data-revoke-access]").forEach((button) => {
+    button.onclick = async () => {
+      await api(`/api/admin/boxes/${boxId}/acessos-orientados/${button.dataset.revokeAccess}`, { method: "DELETE" });
+      await loadOrientedAccesses(boxId);
+    };
+  });
+}
+
+function wireOrientedAccess(boxId) {
+  const form = document.getElementById("oriented-access-form");
+  const feedback = document.getElementById("oriented-feedback");
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const button = form.querySelector("button[type=submit]");
+    button.disabled = true;
+    feedback.textContent = "Gerando…";
+    try {
+      const data = await api(`/api/admin/boxes/${boxId}/acessos-orientados`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(Object.fromEntries(new FormData(form))),
+      });
+      showOrientedCode(data);
+      form.reset();
+      feedback.textContent = "Acesso criado.";
+      await loadOrientedAccesses(boxId);
+    } catch (error) {
+      feedback.className = "feedback error";
+      feedback.textContent = error.message;
+    } finally {
+      button.disabled = false;
+    }
+  });
+  loadOrientedAccesses(boxId).catch((error) => {
+    feedback.className = "feedback error";
+    feedback.textContent = error.message;
+  });
+}
+
 async function renderForm() {
   try {
     const data = creating ? { box:{} } : await api(`/api/admin/boxes/${editMatch[1]}`);
@@ -89,6 +160,7 @@ async function renderForm() {
     if (!creating) {
       renderInvites(data.convites);
       const id=editMatch[1];
+      wireOrientedAccess(id);
       document.getElementById("join-adm").disabled=data.participando_adm;
       document.getElementById("leave-adm").disabled=!data.participando_adm;
       document.getElementById("join-adm").onclick=async()=>{await api(`/api/admin/boxes/${id}/participacao`,{method:"POST"});location.reload();};

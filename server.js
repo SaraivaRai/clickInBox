@@ -290,6 +290,73 @@ app.get("/perfil", autenticarPagina, function (req, res) {
 app.get("/login.html", function (req, res) {
   res.sendFile(__dirname + "/login.html");
 });
+
+const ACESSO_ORIENTADO_DIAS_VALIDADE = 30;
+const ACESSO_ORIENTADO_MAX_TENTATIVAS = 5;
+const ACESSO_ORIENTADO_JANELA_MS = 15 * 60 * 1000;
+const tentativasAcessoOrientado = new Map();
+
+function normalizarEmail(email) {
+  return String(email || "").trim().toLowerCase();
+}
+
+function normalizarCodigoOrientado(codigo) {
+  return String(codigo || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+}
+
+function hashCodigoOrientado(codigo) {
+  return crypto
+    .createHash("sha256")
+    .update(normalizarCodigoOrientado(codigo))
+    .digest("hex");
+}
+
+function gerarCodigoOrientado() {
+  const alfabeto = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
+  let codigo = "";
+  for (let indice = 0; indice < 12; indice += 1) {
+    codigo += alfabeto[crypto.randomInt(0, alfabeto.length)];
+  }
+  return codigo.match(/.{1,4}/g).join("-");
+}
+
+async function criarRegistroAcessoOrientado(executor, boxId, usuarioId, criadoPor) {
+  for (let tentativa = 0; tentativa < 5; tentativa += 1) {
+    const codigo = gerarCodigoOrientado();
+    const expiraEm = new Date();
+    expiraEm.setDate(expiraEm.getDate() + ACESSO_ORIENTADO_DIAS_VALIDADE);
+    try {
+      const resultado = await executor.query(
+        `INSERT INTO acessos_orientados
+           (box_id, usuario_id, codigo_hash, expira_em, criado_por)
+         VALUES ($1, $2, $3, $4, $5)
+         RETURNING id, expira_em`,
+        [boxId, usuarioId, hashCodigoOrientado(codigo), expiraEm, criadoPor],
+      );
+      return { ...resultado.rows[0], codigo };
+    } catch (erro) {
+      if (erro.code !== "23505") throw erro;
+    }
+  }
+  throw new Error("Não foi possível gerar um código único");
+}
+
+async function criarSessaoUsuario(res, usuarioId) {
+  const tokenSessao = crypto.randomBytes(32).toString("hex");
+  const expiraEm = new Date();
+  expiraEm.setDate(expiraEm.getDate() + 20);
+  await pool.query(
+    `INSERT INTO sessoes (token, usuario_id, expira_em)
+     VALUES ($1, $2, $3)`,
+    [tokenSessao, usuarioId, expiraEm],
+  );
+  res.cookie("clickinbox_session", tokenSessao, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 20 * 24 * 60 * 60 * 1000,
+  });
+}
 app.get(
   ["/admin/boxes", "/admin/boxes/nova", "/admin/boxes/:id/editar"],
   autenticarPagina,
@@ -1094,6 +1161,9 @@ app.post("/api/auth/google", async function (req, res) {
     });
 
     const payload = ticket.getPayload();
+    if (!payload.email || payload.email_verified === false) {
+      return res.status(401).json({ erro: "E-mail do Google não verificado" });
+    }
     const usuarioExistente = await pool.query(
       `SELECT id, nome, email
         FROM usuarios
@@ -1104,14 +1174,40 @@ app.post("/api/auth/google", async function (req, res) {
     let usuario;
 
     if (usuarioExistente.rows.length === 0) {
-      const novoUsuario = await pool.query(
-        `INSERT INTO usuarios (nome, email, oauth_provider, oauth_id)
-     VALUES ($1, $2, $3, $4)
-     RETURNING id, nome, email, foto_perfil`,
-        [payload.name, payload.email, "google", payload.sub],
+      const usuarioMesmoEmail = await pool.query(
+        `SELECT id, oauth_provider, oauth_id
+         FROM usuarios
+         WHERE LOWER(BTRIM(email)) = $1`,
+        [normalizarEmail(payload.email)],
       );
 
-      usuario = novoUsuario.rows[0];
+      if (usuarioMesmoEmail.rows.length > 0) {
+        const cadastro = usuarioMesmoEmail.rows[0];
+        if (
+          cadastro.oauth_provider &&
+          (cadastro.oauth_provider !== "google" || cadastro.oauth_id !== payload.sub)
+        ) {
+          return res.status(409).json({
+            erro: "Este e-mail já está associado a outra identidade",
+          });
+        }
+        const usuarioAtualizado = await pool.query(
+          `UPDATE usuarios
+           SET nome = $1, email = $2, oauth_provider = 'google', oauth_id = $3
+           WHERE id = $4
+           RETURNING id, nome, email, foto_perfil`,
+          [payload.name, normalizarEmail(payload.email), payload.sub, cadastro.id],
+        );
+        usuario = usuarioAtualizado.rows[0];
+      } else {
+        const novoUsuario = await pool.query(
+          `INSERT INTO usuarios (nome, email, oauth_provider, oauth_id)
+           VALUES ($1, $2, $3, $4)
+           RETURNING id, nome, email, foto_perfil`,
+          [payload.name, normalizarEmail(payload.email), "google", payload.sub],
+        );
+        usuario = novoUsuario.rows[0];
+      }
     } else {
       const usuarioAtualizado = await pool.query(
         `UPDATE usuarios
@@ -1119,7 +1215,7 @@ app.post("/api/auth/google", async function (req, res) {
          email = $2
      WHERE id = $3
      RETURNING id, nome, email, foto_perfil`,
-        [payload.name, payload.email, usuarioExistente.rows[0].id],
+        [payload.name, normalizarEmail(payload.email), usuarioExistente.rows[0].id],
       );
 
       usuario = usuarioAtualizado.rows[0];
@@ -1145,27 +1241,7 @@ app.post("/api/auth/google", async function (req, res) {
     console.log(usuarioExistente.rows);
     console.log("Usuário Click In Box:", usuario);
 
-    const tokenSessao = crypto.randomBytes(32).toString("hex");
-
-    const expiraEm = new Date();
-    expiraEm.setDate(expiraEm.getDate() + 20);
-
-    await pool.query(
-      `INSERT INTO sessoes (token, usuario_id, expira_em)
-   VALUES ($1, $2, $3)`,
-      [tokenSessao, usuario.id, expiraEm],
-    );
-
-    console.log("Sessão Click In Box criada");
-
-    const cookieSeguro = process.env.NODE_ENV === "production";
-
-    res.cookie("clickinbox_session", tokenSessao, {
-      httpOnly: true,
-      secure: cookieSeguro,
-      sameSite: "lax",
-      maxAge: 20 * 24 * 60 * 60 * 1000,
-    });
+    await criarSessaoUsuario(res, usuario.id);
 
     res.json({
       usuario: usuario,
@@ -1173,6 +1249,68 @@ app.post("/api/auth/google", async function (req, res) {
   } catch (erro) {
     console.error(erro);
     res.status(401).json({ erro: "Token do Google inválido" });
+  }
+});
+
+app.post("/api/auth/acesso-orientado", async function (req, res) {
+  const chaveTentativa = req.ip || req.socket.remoteAddress || "desconhecido";
+  const agora = Date.now();
+  let controle = tentativasAcessoOrientado.get(chaveTentativa);
+  if (!controle || agora - controle.inicio >= ACESSO_ORIENTADO_JANELA_MS) {
+    controle = { inicio: agora, falhas: 0 };
+    tentativasAcessoOrientado.set(chaveTentativa, controle);
+  }
+  if (controle.falhas >= ACESSO_ORIENTADO_MAX_TENTATIVAS) {
+    return res.status(429).json({
+      erro: "Muitas tentativas. Aguarde alguns minutos e tente novamente.",
+    });
+  }
+
+  const codigo = normalizarCodigoOrientado(req.body.codigo);
+  if (!/^[A-Z0-9]{12}$/.test(codigo)) {
+    controle.falhas += 1;
+    return res.status(401).json({ erro: "Código inválido ou expirado" });
+  }
+
+  try {
+    const resultado = await pool.query(
+      `SELECT acessos_orientados.id,
+              acessos_orientados.usuario_id,
+              acessos_orientados.box_id,
+              usuarios.nome,
+              usuarios.email
+       FROM acessos_orientados
+       JOIN usuarios ON usuarios.id = acessos_orientados.usuario_id
+       JOIN usuarios_boxes
+         ON usuarios_boxes.usuario_id = acessos_orientados.usuario_id
+        AND usuarios_boxes.box_id = acessos_orientados.box_id
+        AND usuarios_boxes.papel = 'convidado'
+       WHERE acessos_orientados.codigo_hash = $1
+         AND acessos_orientados.revogado_em IS NULL
+         AND acessos_orientados.expira_em > CURRENT_TIMESTAMP`,
+      [hashCodigoOrientado(codigo)],
+    );
+    if (resultado.rows.length === 0) {
+      controle.falhas += 1;
+      return res.status(401).json({ erro: "Código inválido ou expirado" });
+    }
+
+    const acesso = resultado.rows[0];
+    await Promise.all([
+      criarSessaoUsuario(res, acesso.usuario_id),
+      pool.query(
+        "UPDATE acessos_orientados SET ultimo_uso_em = CURRENT_TIMESTAMP WHERE id = $1",
+        [acesso.id],
+      ),
+    ]);
+    tentativasAcessoOrientado.delete(chaveTentativa);
+    res.json({
+      usuario: { id: acesso.usuario_id, nome: acesso.nome, email: acesso.email },
+      box_id: acesso.box_id,
+    });
+  } catch (erro) {
+    console.error(erro);
+    res.status(500).json({ erro: "Não foi possível realizar o acesso" });
   }
 });
 
@@ -1521,6 +1659,175 @@ app.get("/api/admin/boxes/:id", autenticarUsuario, autorizarAdmin, async (req, r
     res.status(500).json({ erro: "Não foi possível carregar a Box" });
   }
 });
+
+app.get(
+  "/api/admin/boxes/:id/acessos-orientados",
+  autenticarUsuario,
+  autorizarAdmin,
+  async (req, res) => {
+    try {
+      const resultado = await pool.query(
+        `SELECT acessos_orientados.id,
+                usuarios.nome,
+                usuarios.email,
+                acessos_orientados.expira_em,
+                acessos_orientados.revogado_em,
+                acessos_orientados.criado_em,
+                acessos_orientados.ultimo_uso_em
+         FROM acessos_orientados
+         JOIN usuarios ON usuarios.id = acessos_orientados.usuario_id
+         WHERE acessos_orientados.box_id = $1
+         ORDER BY acessos_orientados.criado_em DESC`,
+        [req.params.id],
+      );
+      res.json(resultado.rows);
+    } catch (erro) {
+      console.error(erro);
+      res.status(500).json({ erro: "Não foi possível listar os acessos orientados" });
+    }
+  },
+);
+
+app.post(
+  "/api/admin/boxes/:id/acessos-orientados",
+  autenticarUsuario,
+  autorizarAdmin,
+  async (req, res) => {
+    const nome = String(req.body.nome || "").trim();
+    const email = normalizarEmail(req.body.email);
+    if (!nome || nome.length > 100 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ erro: "Informe nome e e-mail válidos" });
+    }
+
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      const box = await client.query("SELECT id FROM boxes WHERE id = $1", [req.params.id]);
+      if (!box.rows.length) {
+        await client.query("ROLLBACK");
+        return res.status(404).json({ erro: "Box não encontrada" });
+      }
+
+      let usuario = await client.query(
+        "SELECT id, nome, email FROM usuarios WHERE LOWER(BTRIM(email)) = $1 FOR UPDATE",
+        [email],
+      );
+      if (!usuario.rows.length) {
+        usuario = await client.query(
+          `INSERT INTO usuarios (nome, email, oauth_provider, oauth_id)
+           VALUES ($1, $2, NULL, NULL)
+           RETURNING id, nome, email`,
+          [nome, email],
+        );
+      }
+      const pessoa = usuario.rows[0];
+      const vinculo = await client.query(
+        "SELECT papel FROM usuarios_boxes WHERE usuario_id = $1 AND box_id = $2",
+        [pessoa.id, req.params.id],
+      );
+      if (vinculo.rows.length && vinculo.rows[0].papel !== "convidado") {
+        await client.query("ROLLBACK");
+        return res.status(409).json({
+          erro: "Este usuário já possui outro papel nesta Box",
+        });
+      }
+      if (!vinculo.rows.length) {
+        await client.query(
+          "INSERT INTO usuarios_boxes (usuario_id, box_id, papel) VALUES ($1, $2, 'convidado')",
+          [pessoa.id, req.params.id],
+        );
+      }
+      await client.query(
+        `UPDATE acessos_orientados
+         SET revogado_em = CURRENT_TIMESTAMP
+         WHERE usuario_id = $1 AND box_id = $2 AND revogado_em IS NULL`,
+        [pessoa.id, req.params.id],
+      );
+      const acesso = await criarRegistroAcessoOrientado(
+        client,
+        req.params.id,
+        pessoa.id,
+        req.usuario.id,
+      );
+      await client.query("COMMIT");
+      res.status(201).json({
+        id: acesso.id,
+        nome: pessoa.nome,
+        email: pessoa.email,
+        codigo: acesso.codigo,
+        expira_em: acesso.expira_em,
+      });
+    } catch (erro) {
+      await client.query("ROLLBACK").catch(() => {});
+      console.error(erro);
+      res.status(400).json({ erro: "Não foi possível criar o acesso orientado" });
+    } finally {
+      client.release();
+    }
+  },
+);
+
+app.post(
+  "/api/admin/boxes/:boxId/acessos-orientados/:id/regenerar",
+  autenticarUsuario,
+  autorizarAdmin,
+  async (req, res) => {
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      const atual = await client.query(
+        `SELECT usuario_id FROM acessos_orientados
+         WHERE id = $1 AND box_id = $2 FOR UPDATE`,
+        [req.params.id, req.params.boxId],
+      );
+      if (!atual.rows.length) {
+        await client.query("ROLLBACK");
+        return res.status(404).json({ erro: "Acesso orientado não encontrado" });
+      }
+      await client.query(
+        `UPDATE acessos_orientados SET revogado_em = CURRENT_TIMESTAMP
+         WHERE usuario_id = $1 AND box_id = $2 AND revogado_em IS NULL`,
+        [atual.rows[0].usuario_id, req.params.boxId],
+      );
+      const acesso = await criarRegistroAcessoOrientado(
+        client,
+        req.params.boxId,
+        atual.rows[0].usuario_id,
+        req.usuario.id,
+      );
+      await client.query("COMMIT");
+      res.json({ id: acesso.id, codigo: acesso.codigo, expira_em: acesso.expira_em });
+    } catch (erro) {
+      await client.query("ROLLBACK").catch(() => {});
+      console.error(erro);
+      res.status(400).json({ erro: "Não foi possível regenerar o acesso" });
+    } finally {
+      client.release();
+    }
+  },
+);
+
+app.delete(
+  "/api/admin/boxes/:boxId/acessos-orientados/:id",
+  autenticarUsuario,
+  autorizarAdmin,
+  async (req, res) => {
+    try {
+      const resultado = await pool.query(
+        `UPDATE acessos_orientados SET revogado_em = CURRENT_TIMESTAMP
+         WHERE id = $1 AND box_id = $2 AND revogado_em IS NULL RETURNING id`,
+        [req.params.id, req.params.boxId],
+      );
+      if (!resultado.rows.length) {
+        return res.status(404).json({ erro: "Acesso orientado não encontrado ou já revogado" });
+      }
+      res.status(204).end();
+    } catch (erro) {
+      console.error(erro);
+      res.status(500).json({ erro: "Não foi possível revogar o acesso" });
+    }
+  },
+);
 
 function excluirPublicacaoLogicamente(tabela, nomePublicacao) {
   return async function (req, res) {

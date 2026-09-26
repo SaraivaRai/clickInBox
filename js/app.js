@@ -1406,19 +1406,73 @@ function initializeBoxPage() {
         class="login-overlay-logo"
       />
 
-      <h2>Entre para continuar</h2>
-
-      <div id="google-login-button"></div>
+      <div id="login-google-state" class="login-overlay-state">
+        <h2>Entre para continuar</h2>
+        <div id="google-login-button"></div>
+        <button type="button" class="login-overlay-link" id="show-oriented-access">Acesso orientado</button>
+      </div>
+      <form id="oriented-access-login" class="login-overlay-state" hidden>
+        <h2>Acesso orientado</h2>
+        <p>Digite o código fornecido pela equipe do evento.</p>
+        <input id="oriented-access-code" name="codigo" inputmode="text" autocomplete="one-time-code" maxlength="14" required aria-label="Código de acesso">
+        <p id="oriented-access-feedback" class="login-overlay-feedback" role="alert"></p>
+        <button type="submit" class="login-overlay-submit">Entrar</button>
+        <button type="button" class="login-overlay-link" id="back-to-google-login">Voltar para entrar com Google</button>
+      </form>
     </div>
   `;
 
     document.body.appendChild(overlay);
 
     const fechar = overlay.querySelector("#login-overlay-close");
+    const googleState = overlay.querySelector("#login-google-state");
+    const orientedState = overlay.querySelector("#oriented-access-login");
+    const orientedFeedback = overlay.querySelector("#oriented-access-feedback");
+
+    function mostrarGoogle() {
+      googleState.hidden = false;
+      orientedState.hidden = true;
+      orientedState.reset();
+      orientedFeedback.textContent = "";
+    }
 
     fechar.addEventListener("click", function () {
       overlay.hidden = true;
       loginDestino = null;
+      mostrarGoogle();
+    });
+
+    overlay.querySelector("#show-oriented-access").addEventListener("click", () => {
+      googleState.hidden = true;
+      orientedState.hidden = false;
+      overlay.querySelector("#oriented-access-code").focus();
+    });
+
+    overlay.querySelector("#back-to-google-login").addEventListener("click", mostrarGoogle);
+
+    orientedState.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const button = orientedState.querySelector("button[type=submit]");
+      button.disabled = true;
+      orientedFeedback.textContent = "Entrando…";
+      try {
+        const resposta = await fetch("/api/auth/acesso-orientado", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            codigo: overlay.querySelector("#oriented-access-code").value,
+          }),
+        });
+        const dados = await resposta.json().catch(() => ({}));
+        if (!resposta.ok) throw new Error(dados.erro || "Código inválido");
+        loginDestino = null;
+        overlay.hidden = true;
+        window.location.href = `/boxes/${dados.box_id}`;
+      } catch (erro) {
+        orientedFeedback.textContent = erro.message;
+      } finally {
+        button.disabled = false;
+      }
     });
 
     return overlay;
@@ -1453,6 +1507,9 @@ function initializeBoxPage() {
     const overlay = criarLoginOverlay();
 
     loginDestino = destino;
+    overlay.querySelector("#login-google-state").hidden = false;
+    overlay.querySelector("#oriented-access-login").hidden = true;
+    overlay.querySelector("#oriented-access-feedback").textContent = "";
     overlay.hidden = false;
 
     await carregarGoogleLogin();
