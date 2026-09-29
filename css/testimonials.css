@@ -7,32 +7,6 @@
   padding: 0 18px calc(150px + env(safe-area-inset-bottom));
 }
 
-.testimonials-header {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  margin-top: 15px;
-  margin-bottom: -3px;
-  transform: translateY(-10px);
-}
-
-.testimonials-heading h1 {
-  margin: 0 0 3px;
-  font-family: "Libre Baskerville", Georgia, serif;
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--box-cor-texto);
-}
-
-.testimonials-heading p {
-  margin: 0;
-  font-size: 9px;
-  line-height: 1.4;
-  color: var(--box-cor-texto-suave);
-}
-
 .testimonial-create-button {
   flex-shrink: 0;
   width: 120px;
@@ -305,7 +279,7 @@ body.testimonial-writing > .box-internal-nav {
   transform: none !important;
 }
 
-body.testimonial-writing .testimonials-header {
+body.testimonial-writing .box-content-header {
   margin-top: 20px;
   transform: translateY(0);
 }

@@ -8,22 +8,6 @@
   
 }
 
-.album-header {
-  text-align: center;
-  margin-bottom: 20px;
-}
-
-.album-header h1 {
-  margin: 0;
-  font-size: 28px;
-  font-weight: 400;
-}
-
-.album-header p {
-  margin: 6px 0 0;
-  font-size: 14px;
-}
-
 /* =========================
           CABECALHO
    ========================= */
@@ -32,48 +16,16 @@
   padding: 0 18px calc(150px + env(safe-area-inset-bottom));
 }
 
-.album-header {
-  position: relative;
-
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-
-  margin-top: 4px;
-  margin-bottom: -25px;
-  transform: translateY(-19px);
-}
-
-.album-heading h1 {
-  margin: 0 0 3px;
-
-  font-family: "Libre Baskerville", Georgia, serif;
-  font-size: 18px;
-  font-weight: 700;
-
-  color: var(--box-cor-texto);
-}
-
-.album-heading p {
-  margin: 0;
-
-  font-size: 9px;
-  line-height: 1.4;
-
-  color: var(--box-cor-texto-suave);
-}
-
 .album-upload {
   flex-shrink: 0;
-  transform: translateY(10px);
+  transform: translateY(13px);
 }
 
 .album .album-upload label {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
+  gap: 9px;
 
   width: 120px;
   box-sizing: border-box;

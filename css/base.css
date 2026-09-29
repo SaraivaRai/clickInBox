@@ -36,3 +36,54 @@ header img {
     object-fit: cover;
     display: block;
 }
+
+/* =========================
+   CONTEÚDO DAS PÁGINAS INTERNAS
+   Padrão visual baseado na Festa
+========================= */
+
+.box-content {
+    width: 100%;
+    padding: 0 18px calc(150px + env(safe-area-inset-bottom));
+}
+
+/* =========================
+   CABEÇALHO DAS PÁGINAS INTERNAS
+   Padrão visual baseado na Festa
+========================= */
+
+.box-content-header {
+    position: relative;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+
+    min-height: 63px;
+
+    margin-top: 4px;
+    margin-bottom: -25px;
+    transform: translateY(-19px);
+
+    text-align: left;
+}
+
+.box-content-heading h1 {
+    margin: 0 0 3px;
+
+    font-family: "Libre Baskerville", Georgia, serif;
+    font-size: 18px;
+    font-weight: 700;
+
+    color: var(--box-cor-texto);
+}
+
+.box-content-heading p {
+    margin: 0;
+
+    font-size: 9px;
+    line-height: 1.4;
+
+    color: var(--box-cor-texto-suave);
+}

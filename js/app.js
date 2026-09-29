@@ -200,20 +200,25 @@ function initializeBoxPage() {
       espelho_magico: "Espelho Mágico",
       cabine_fotos: "Cabine de Fotos",
     };
+    const rotulosAtracao = {
+      espelho_magico: "Espelho",
+      cabine_fotos: "Cabine",
+    };
     const iconesAtracao = {
       espelho_magico: "/assets/icons/Espelho.png",
       cabine_fotos: "/assets/icons/Cabine.png",
     };
     const nomeAtracao = nomesAtracao[box.atracao_tipo] || "Atração Click In Box";
+    const rotuloAtracao = rotulosAtracao[box.atracao_tipo] || "Atração";
     const atracaoGavetaNome = document.querySelector("#atracao-gaveta-nome");
     const atracaoGavetaIcone = document.querySelector("#atracao-gaveta-icone");
     const atracaoNavNome = document.querySelector("#atracao-nav-nome");
     const atracaoNavIcone = document.querySelector("#atracao-nav-icone");
     const attractionTitle = document.querySelector("#attraction-title");
-    if (atracaoGavetaNome) atracaoGavetaNome.textContent = nomeAtracao;
+    if (atracaoGavetaNome) atracaoGavetaNome.textContent = rotuloAtracao;
     if (atracaoGavetaIcone) atracaoGavetaIcone.src = iconesAtracao[box.atracao_tipo] || "";
-    if (linkAtracao && atracaoGavetaNome) linkAtracao.hidden = !box.atracao_tipo;
-    if (atracaoNavNome) atracaoNavNome.textContent = nomeAtracao;
+    if (linkAtracao) linkAtracao.hidden = !box.atracao_tipo;
+    if (atracaoNavNome) atracaoNavNome.textContent = rotuloAtracao;
     if (atracaoNavIcone) atracaoNavIcone.src = iconesAtracao[box.atracao_tipo] || "";
     if (attractionTitle) attractionTitle.textContent = nomeAtracao;
 

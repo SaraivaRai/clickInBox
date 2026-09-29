@@ -8,22 +8,6 @@
   padding: 24px 16px;
 }
 
-.memories-header {
-  text-align: center;
-  margin-bottom: 20px;
-}
-
-.memories-header h1 {
-  margin: 0;
-  font-size: 28px;
-  font-weight: 400;
-}
-
-.memories-header p {
-  margin: 6px 0 0;
-  font-size: 14px;
-}
-
 /* Formulário */
 
 .memory-form {
@@ -330,38 +314,6 @@
   padding: 0 18px calc(150px + env(safe-area-inset-bottom));
 }
 
-.memories-header {
-  position: relative;
-
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-
-  margin-top: 15px;
-  margin-bottom: -3px;
-  transform: translateY(-10px);
-}
-
-.memories-heading h1 {
-  margin: 0 0 3px;
-
-  font-family: "Libre Baskerville", Georgia, serif;
-  font-size: 18px;
-  font-weight: 700;
-
-  color: var(--box-cor-texto);
-}
-
-.memories-heading p {
-  margin: 0;
-
-  font-size: 9px;
-  line-height: 1.4;
-
-  color: var(--box-cor-texto-suave);
-}
-
 .memory-create-button {
   flex-shrink: 0;
   transform: translateY(0);
@@ -394,7 +346,7 @@ body.memory-writing > .box-internal-nav {
   transform: none !important;
 }
 
-body.memory-writing .memories-header {
+body.memory-writing .box-content-header {
   margin-top: 20px;
   transform: translateY(0);
 }
