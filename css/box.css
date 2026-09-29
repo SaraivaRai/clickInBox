@@ -549,6 +549,147 @@ body.box-page { background-color: var(--box-ambiente-pagina); }
   filter: blur(4px);
 }
 
+/* Geometria especial: quatro gavetas recortadas ao redor do Protagonista. */
+.box-page .gavetas-list--with-attraction {
+  --box-drawer-gap: 10px;
+  --box-protagonist-diameter: 135px;
+  --box-drawer-radial-gap: 9px;
+  --box-drawer-cutout-radius: calc(
+    var(--box-protagonist-diameter) / 2 + var(--box-drawer-radial-gap)
+  );
+  --box-drawer-cutout-offset: calc(var(--box-drawer-gap) / 2);
+  --box-drawer-arc-color: var(
+    --box-ambiente-borda,
+    rgba(182, 123, 60, 0.12)
+  );
+
+  position: relative;
+  grid-template-areas:
+    "festa memorias"
+    "depoimentos atracao";
+  gap: var(--box-drawer-gap);
+}
+
+.box-page .gavetas-list--with-attraction #link-album {
+  grid-area: festa;
+  --box-drawer-cutout-x: calc(100% + var(--box-drawer-cutout-offset));
+  --box-drawer-cutout-y: calc(100% + var(--box-drawer-cutout-offset));
+}
+
+.box-page .gavetas-list--with-attraction #link-depoimentos {
+  grid-area: depoimentos;
+  --box-drawer-cutout-x: calc(100% + var(--box-drawer-cutout-offset));
+  --box-drawer-cutout-y: calc(0% - var(--box-drawer-cutout-offset));
+}
+
+.box-page .gavetas-list--with-attraction #link-memorias {
+  grid-area: memorias;
+  --box-drawer-cutout-x: calc(0% - var(--box-drawer-cutout-offset));
+  --box-drawer-cutout-y: calc(100% + var(--box-drawer-cutout-offset));
+}
+
+.box-page .gavetas-list--with-attraction #link-atracao {
+  grid-area: atracao;
+  grid-column: auto;
+  justify-self: stretch;
+  width: auto;
+  --box-drawer-cutout-x: calc(0% - var(--box-drawer-cutout-offset));
+  --box-drawer-cutout-y: calc(0% - var(--box-drawer-cutout-offset));
+}
+
+.box-page
+  .gavetas-list--with-attraction
+  > .gaveta:not(#link-protagonista) {
+  isolation: isolate;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.box-page
+  .gavetas-list--with-attraction
+  > .gaveta:not(#link-protagonista)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border: var(--box-borda-suave);
+  border-radius: inherit;
+  background: linear-gradient(
+    180deg,
+    var(--box-ambiente-card-1) 0%,
+    var(--box-ambiente-card-2) 100%
+  );
+  box-shadow:
+    0 7px 17px rgba(78, 51, 34, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+  -webkit-mask-image: radial-gradient(
+    circle at var(--box-drawer-cutout-x) var(--box-drawer-cutout-y),
+    transparent 0 calc(var(--box-drawer-cutout-radius) - 0.5px),
+    #000 calc(var(--box-drawer-cutout-radius) + 0.5px)
+  );
+  mask-image: radial-gradient(
+    circle at var(--box-drawer-cutout-x) var(--box-drawer-cutout-y),
+    transparent 0 calc(var(--box-drawer-cutout-radius) - 0.5px),
+    #000 calc(var(--box-drawer-cutout-radius) + 0.5px)
+  );
+  pointer-events: none;
+}
+
+.box-page
+  .gavetas-list--with-attraction
+  > .gaveta:not(#link-protagonista)::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: auto;
+  height: auto;
+  border-radius: inherit;
+  background: radial-gradient(
+    circle at var(--box-drawer-cutout-x) var(--box-drawer-cutout-y),
+    transparent 0 calc(var(--box-drawer-cutout-radius) - 0.75px),
+    var(--box-drawer-arc-color)
+      calc(var(--box-drawer-cutout-radius) - 0.25px),
+    var(--box-drawer-arc-color)
+      calc(var(--box-drawer-cutout-radius) + 0.75px),
+    transparent calc(var(--box-drawer-cutout-radius) + 1.25px)
+  );
+  filter: none;
+  pointer-events: none;
+}
+
+.box-page
+  .gavetas-list--with-attraction
+  > .gaveta:not(#link-protagonista)
+  > * {
+  position: relative;
+  z-index: 2;
+}
+
+.box-page .gavetas-list--with-attraction #link-album > *,
+.box-page .gavetas-list--with-attraction #link-depoimentos > * {
+  translate: -5px 0;
+}
+
+.box-page .gavetas-list--with-attraction #link-memorias > *,
+.box-page .gavetas-list--with-attraction #link-atracao > * {
+  translate: 5px 0;
+}
+
+.box-page .gavetas-list--with-attraction #link-protagonista {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 3;
+  width: var(--box-protagonist-diameter);
+  height: var(--box-protagonist-diameter);
+  min-height: 0;
+  border-radius: 50%;
+  translate: -50% -50%;
+}
+
 .box-page .gaveta:active {
   transform: scale(0.98);
   box-shadow:

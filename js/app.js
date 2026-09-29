@@ -52,6 +52,7 @@ function initializeBoxPage() {
   const linkProtagonista = document.querySelector("#link-protagonista");
   const linkMemorias = document.querySelector("#link-memorias");
   const linkAtracao = document.querySelector("#link-atracao");
+  const gavetasList = document.querySelector(".gavetas-list");
   const boxReturn = document.querySelector("#box-return");
 
   async function carregarPermissoesBox() {
@@ -218,6 +219,10 @@ function initializeBoxPage() {
     if (atracaoGavetaNome) atracaoGavetaNome.textContent = rotuloAtracao;
     if (atracaoGavetaIcone) atracaoGavetaIcone.src = iconesAtracao[box.atracao_tipo] || "";
     if (linkAtracao) linkAtracao.hidden = !box.atracao_tipo;
+    gavetasList?.classList.toggle(
+      "gavetas-list--with-attraction",
+      Boolean(box.atracao_tipo),
+    );
     if (atracaoNavNome) atracaoNavNome.textContent = rotuloAtracao;
     if (atracaoNavIcone) atracaoNavIcone.src = iconesAtracao[box.atracao_tipo] || "";
     if (attractionTitle) attractionTitle.textContent = nomeAtracao;
