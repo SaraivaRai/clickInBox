@@ -486,6 +486,16 @@ body.box-page { background-color: var(--box-ambiente-pagina); }
   gap: 10px; /* Aumentei de 8px */
 }
 
+.box-page .gaveta-atracao {
+  grid-column: 1 / -1;
+  justify-self: center;
+  width: calc((100% - 10px) / 2);
+}
+
+.box-page .gaveta-atracao[hidden] {
+  display: none;
+}
+
 .box-page .gaveta {
   position: relative;
   display: flex;

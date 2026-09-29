@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/css/style.css" />
+    <link rel="icon" type="image/png" href="/assets/icons/icon-192.png" />
+    <title>Click In Box</title>
+  </head>
+  <body>
+    <header>
+      <a href="/" class="header-logo"><img src="/assets/logo/logo.png" alt="Click In Box" /></a>
+      <div class="header-account" id="header-account"><button type="button" id="btn-login">Entrar</button></div>
+    </header>
+    <section class="box-internal-hero">
+      <div class="box-hero-photo"><img id="box-imagem-principal" class="box-hero-image" src="" alt="" /></div>
+      <div class="box-hero-overlay">
+        <span class="box-hero-heart" aria-hidden="true">♡</span>
+        <div class="box-internal-music">
+          <audio id="box-musica"><source id="box-musica-source" src="" type="audio/mpeg" /></audio>
+          <button type="button" class="music-play-button" id="music-play-button" aria-label="Reproduzir música">▶</button>
+          <span class="box-internal-music-label">Nossa Música</span>
+        </div>
+        <div class="box-info box-return-trigger" role="link" tabindex="0" aria-label="Voltar para a Box">
+          <img id="box-apresentacao-imagem" class="box-presentation-art" src="" alt="" hidden />
+          <h1 id="box-nome"></h1>
+          <div class="box-event-line"><span></span><p id="box-evento"></p><span></span></div>
+          <blockquote>“Alguns momentos merecem durar mais que uma noite.”</blockquote>
+          <span class="box-hero-small-heart" aria-hidden="true">♥</span>
+        </div>
+      </div>
+    </section>
+    <nav class="box-internal-nav attraction-nav" aria-label="Áreas da Box">
+      <a id="link-protagonista" href="#" class="box-internal-nav-item"><img src="/assets/icons/Pessoas.png" alt="" /><span>Protagonista</span></a>
+      <a id="link-album" href="#" class="box-internal-nav-item"><img src="/assets/icons/Festa.png" alt="" /><span>Festa</span></a>
+      <a id="link-depoimentos" href="#" class="box-internal-nav-item"><img src="/assets/icons/Depoimento.png" alt="" /><span>Depoimentos</span></a>
+      <a id="link-memorias" href="#" class="box-internal-nav-item"><img src="/assets/icons/Memoria.png" alt="" /><span>Memórias</span></a>
+      <a id="link-atracao" href="#" class="box-internal-nav-item is-active">
+        <img id="atracao-nav-icone" src="" alt="" aria-hidden="true" />
+        <span id="atracao-nav-nome">Atração</span>
+      </a>
+    </nav>
+    <main>
+      <section class="attraction-gallery">
+        <header class="attraction-heading">
+          <div><h1 id="attraction-title">Fotos da atração</h1><p>Leve com você os momentos registrados pela Click In Box.</p></div>
+          <a id="box-return" class="box-return" href="#" aria-label="Voltar para a Box"></a>
+        </header>
+        <p id="attraction-loading" class="attraction-state">Carregando fotos…</p>
+        <p id="attraction-empty" class="attraction-state" hidden>Em breve, suas fotos estarão aqui.</p>
+        <div id="attraction-grid" class="attraction-grid"></div>
+        <section class="box-participants album-participants" id="people-special-link" role="link" tabindex="0">
+          <h2><span aria-hidden="true">♡</span> Pessoas especiais nesta história</h2>
+          <div class="participants-list" id="box-participants"></div>
+        </section>
+      </section>
+    </main>
+    <dialog id="attraction-viewer" class="attraction-viewer" aria-label="Visualização da foto">
+      <div class="attraction-viewer-panel">
+        <button type="button" class="attraction-viewer-close" aria-label="Fechar">×</button>
+        <button type="button" class="attraction-viewer-previous" aria-label="Foto anterior">‹</button>
+        <img id="attraction-viewer-image" src="" alt="" />
+        <button type="button" class="attraction-viewer-next" aria-label="Próxima foto">›</button>
+        <a id="attraction-download" class="attraction-download" href="#">Baixar foto original</a>
+      </div>
+    </dialog>
+    <footer class="footer"><img src="/assets/logo/logo.png" alt="Click In Box" /></footer>
+    <script src="/js/app.js"></script>
+  </body>
+</html>

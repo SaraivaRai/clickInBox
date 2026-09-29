@@ -51,6 +51,7 @@ function initializeBoxPage() {
   const linkDepoimentos = document.querySelector("#link-depoimentos");
   const linkProtagonista = document.querySelector("#link-protagonista");
   const linkMemorias = document.querySelector("#link-memorias");
+  const linkAtracao = document.querySelector("#link-atracao");
   const boxReturn = document.querySelector("#box-return");
 
   async function carregarPermissoesBox() {
@@ -161,6 +162,7 @@ function initializeBoxPage() {
     if (linkProtagonista)
       linkProtagonista.href = `/boxes/${boxId}/protagonista`;
     if (linkMemorias) linkMemorias.href = `/boxes/${boxId}/memorias`;
+    if (linkAtracao) linkAtracao.href = `/boxes/${boxId}/atracao`;
     if (boxReturn) boxReturn.href = `/boxes/${boxId}`;
   }
 
@@ -194,6 +196,26 @@ function initializeBoxPage() {
       });
     }
     if (boxEvento) boxEvento.textContent = box.evento;
+    const nomesAtracao = {
+      espelho_magico: "Espelho Mágico",
+      cabine_fotos: "Cabine de Fotos",
+    };
+    const iconesAtracao = {
+      espelho_magico: "/assets/icons/Espelho.png",
+      cabine_fotos: "/assets/icons/Cabine.png",
+    };
+    const nomeAtracao = nomesAtracao[box.atracao_tipo] || "Atração Click In Box";
+    const atracaoGavetaNome = document.querySelector("#atracao-gaveta-nome");
+    const atracaoGavetaIcone = document.querySelector("#atracao-gaveta-icone");
+    const atracaoNavNome = document.querySelector("#atracao-nav-nome");
+    const atracaoNavIcone = document.querySelector("#atracao-nav-icone");
+    const attractionTitle = document.querySelector("#attraction-title");
+    if (atracaoGavetaNome) atracaoGavetaNome.textContent = nomeAtracao;
+    if (atracaoGavetaIcone) atracaoGavetaIcone.src = iconesAtracao[box.atracao_tipo] || "";
+    if (linkAtracao && atracaoGavetaNome) linkAtracao.hidden = !box.atracao_tipo;
+    if (atracaoNavNome) atracaoNavNome.textContent = nomeAtracao;
+    if (atracaoNavIcone) atracaoNavIcone.src = iconesAtracao[box.atracao_tipo] || "";
+    if (attractionTitle) attractionTitle.textContent = nomeAtracao;
 
     const primeiroNome = box.nome.trim().split(/\s+/)[0];
     const testimonialText = document.querySelector("#testimonial-text");
@@ -390,6 +412,79 @@ function initializeBoxPage() {
   }
 
   carregarFotos();
+
+  async function carregarFotosAtracao() {
+    const grid = document.querySelector("#attraction-grid");
+    if (!grid) return;
+    const loading = document.querySelector("#attraction-loading");
+    const empty = document.querySelector("#attraction-empty");
+    const dialog = document.querySelector("#attraction-viewer");
+    const viewerImage = document.querySelector("#attraction-viewer-image");
+    const download = document.querySelector("#attraction-download");
+    const previous = dialog.querySelector(".attraction-viewer-previous");
+    const next = dialog.querySelector(".attraction-viewer-next");
+    let fotos = [];
+    let indiceAtual = 0;
+
+    function atualizarViewer() {
+      const foto = fotos[indiceAtual];
+      viewerImage.src = `/api/boxes/${boxId}/atracao/${foto.id}/original`;
+      viewerImage.alt = foto.nome_original;
+      download.href = `/api/boxes/${boxId}/atracao/${foto.id}/original?download=1`;
+      previous.hidden = fotos.length < 2;
+      next.hidden = fotos.length < 2;
+    }
+
+    function abrirViewer(indice) {
+      indiceAtual = indice;
+      atualizarViewer();
+      document.body.classList.add("attraction-viewer-open");
+      dialog.showModal();
+    }
+
+    function fecharViewer() {
+      dialog.close();
+      viewerImage.removeAttribute("src");
+      document.body.classList.remove("attraction-viewer-open");
+    }
+
+    dialog.querySelector(".attraction-viewer-close").addEventListener("click", fecharViewer, { signal: pageEvents.signal });
+    previous.addEventListener("click", () => { indiceAtual = (indiceAtual - 1 + fotos.length) % fotos.length; atualizarViewer(); }, { signal: pageEvents.signal });
+    next.addEventListener("click", () => { indiceAtual = (indiceAtual + 1) % fotos.length; atualizarViewer(); }, { signal: pageEvents.signal });
+    dialog.addEventListener("click", (event) => { if (event.target === dialog) fecharViewer(); }, { signal: pageEvents.signal });
+    dialog.addEventListener("close", () => document.body.classList.remove("attraction-viewer-open"), { signal: pageEvents.signal });
+    dialog.addEventListener("keydown", (event) => {
+      if (event.key === "ArrowLeft" && fotos.length > 1) previous.click();
+      if (event.key === "ArrowRight" && fotos.length > 1) next.click();
+    }, { signal: pageEvents.signal });
+
+    try {
+      const resposta = await fetch(`/api/boxes/${boxId}/atracao`, { signal: pageEvents.signal });
+      if (!resposta.ok) throw new Error("Não foi possível carregar as fotos.");
+      const dados = await resposta.json();
+      fotos = dados.fotos;
+      loading.hidden = true;
+      empty.hidden = fotos.length > 0;
+      fotos.forEach((foto, indice) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "attraction-photo";
+        button.setAttribute("aria-label", `Abrir ${foto.nome_original}`);
+        const image = document.createElement("img");
+        image.src = `/api/boxes/${boxId}/atracao/${foto.id}/miniatura`;
+        image.alt = foto.nome_original;
+        image.loading = "lazy";
+        button.appendChild(image);
+        button.addEventListener("click", () => abrirViewer(indice), { signal: pageEvents.signal });
+        grid.appendChild(button);
+      });
+    } catch (erro) {
+      if (erro.name === "AbortError") return;
+      loading.textContent = erro.message;
+    }
+  }
+
+  carregarFotosAtracao();
 
   const albumPhoto = document.querySelector("#album-photo");
   const albumFeedback = document.querySelector("#album-feedback");
@@ -1592,6 +1687,7 @@ function initializeBoxPage() {
     linkDepoimentos,
     linkMemorias,
     linkProtagonista,
+    linkAtracao,
   ].filter(Boolean);
 
   gavetasPrivadas.forEach((gaveta) => {
@@ -1752,7 +1848,7 @@ function initializeBoxPage() {
 
 // Keep the media element in this document while navigating within one Box.
 const boxRoute = window.location.pathname.match(
-  /^\/boxes\/([^/]+)(?:\/(?:album|depoimentos|memorias|pessoas|protagonista))?\/?$/,
+  /^\/boxes\/([^/]+)(?:\/(?:album|depoimentos|memorias|pessoas|protagonista|atracao))?\/?$/,
 );
 const persistentBoxId = boxRoute?.[1];
 let currentPageEvents;
@@ -1774,6 +1870,7 @@ function isBoxDestination(href) {
           "memorias",
           "pessoas",
           "protagonista",
+          "atracao",
         ].includes(parts[3])))
   );
 }

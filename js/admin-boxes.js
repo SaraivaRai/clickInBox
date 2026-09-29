@@ -37,6 +37,7 @@ function formHtml(box = {}) {
         <div class="field"><label for="evento">Evento</label><input id="evento" name="evento" maxlength="100" required value="${escapeHtml(box.evento)}"></div>
         <div class="field"><label for="data_evento">Data do evento</label><input id="data_evento" name="data_evento" type="date" required value="${date}"></div>
         <div class="field"><label for="cor_ambientacao">Cor de ambientação</label><input id="cor_ambientacao" name="cor_ambientacao" type="color" value="${escapeHtml(box.cor_ambientacao || "#d99678")}" ${!creating && !box.cor_ambientacao ? "disabled" : ""}><label class="hint"><input id="usar-cor" type="checkbox" style="width:auto" ${creating || box.cor_ambientacao ? "checked" : ""} ${creating ? "disabled" : ""}> Usar cor derivada nesta Box</label></div>
+        <div class="field"><label for="atracao_tipo">Atração Click In Box</label><select id="atracao_tipo" name="atracao_tipo"><option value="">Não configurada</option><option value="espelho_magico" ${box.atracao_tipo === "espelho_magico" ? "selected" : ""}>Espelho Mágico</option><option value="cabine_fotos" ${box.atracao_tipo === "cabine_fotos" ? "selected" : ""}>Cabine de Fotos</option></select></div>
         <label class="hint"><input name="visivel_home" type="checkbox" style="width:auto" ${box.visivel_home ? "checked" : ""}> Exibir na Home</label>
       </section>
       <fieldset class="panel"><legend>Apresentação</legend><div class="radio-row">
@@ -56,6 +57,10 @@ function formHtml(box = {}) {
       <section class="panel"><h2>Acesso orientado</h2><p class="hint">Cadastre uma pessoa para gerar um código de acesso sem Google.</p>
         <form id="oriented-access-form" class="fields"><div class="field"><label for="oriented-name">Nome</label><input id="oriented-name" name="nome" maxlength="100" required></div><div class="field"><label for="oriented-email">E-mail</label><input id="oriented-email" name="email" type="email" maxlength="255" required></div><div class="actions field full"><button type="submit">Criar acesso orientado</button></div></form>
         <div id="oriented-code" class="oriented-code" hidden></div><div id="oriented-feedback" class="feedback"></div><div id="oriented-access-list" class="oriented-access-list">Carregando…</div>
+      </section>
+      <section class="panel"><h2>Fotos da atração</h2><p class="hint">Salve a atração escolhida acima e envie até 200 fotos por lote. Cada arquivo pode ter até 15 MB.</p>
+        <form id="attraction-upload-form" class="attraction-upload-form"><input id="attraction-files" name="fotos" type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple required><button type="submit">Enviar fotos</button></form>
+        <div id="attraction-upload-feedback" class="feedback"></div><div id="admin-attraction-photos" class="admin-attraction-photos">Carregando…</div>
       </section>
       <section class="panel"><h2>Demonstração como ADM</h2><p>O vínculo ADM permite publicar conteúdo sem consumir convites e não aparece em Pessoas Especiais.</p><div class="actions"><button id="join-adm" type="button">Participar como ADM</button><button id="clean-content" class="danger" type="button">Limpar meu conteúdo nesta Box</button><button id="leave-adm" class="secondary" type="button">Remover participação ADM</button></div></section>`}
     <dialog id="confirm-dialog"><h2>Limpar conteúdo de demonstração?</h2><p>Serão removidos somente fotos, depoimentos e memórias criados pela sua conta nesta Box. Esta ação não pode ser desfeita.</p><div class="actions"><button id="cancel-clean" class="secondary">Cancelar</button><button id="confirm-clean" class="danger">Confirmar limpeza</button></div></dialog>`;
@@ -153,6 +158,61 @@ function wireOrientedAccess(boxId) {
   });
 }
 
+async function loadAdminAttractionPhotos(boxId) {
+  const container = document.getElementById("admin-attraction-photos");
+  const fotos = await api(`/api/admin/boxes/${boxId}/fotos-atracao`);
+  container.innerHTML = fotos.length ? fotos.map((foto) => `
+    <article class="admin-attraction-photo">
+      <img src="/api/admin/boxes/${boxId}/fotos-atracao/${foto.id}/miniatura" alt="${escapeHtml(foto.nome_original)}" loading="lazy">
+      <span title="${escapeHtml(foto.nome_original)}">${escapeHtml(foto.nome_original)}</span>
+      <button type="button" class="danger" data-delete-attraction-photo="${foto.id}">Excluir</button>
+    </article>`).join("") : "<p class=\"hint\">Nenhuma foto enviada.</p>";
+  container.querySelectorAll("[data-delete-attraction-photo]").forEach((button) => {
+    button.onclick = async () => {
+      button.disabled = true;
+      try {
+        await api(`/api/admin/boxes/${boxId}/fotos-atracao/${button.dataset.deleteAttractionPhoto}`, { method: "DELETE" });
+        await loadAdminAttractionPhotos(boxId);
+      } catch (error) {
+        button.disabled = false;
+        document.getElementById("attraction-upload-feedback").textContent = error.message;
+      }
+    };
+  });
+}
+
+function wireAttractionUpload(boxId) {
+  const form = document.getElementById("attraction-upload-form");
+  const files = document.getElementById("attraction-files");
+  const feedback = document.getElementById("attraction-upload-feedback");
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!files.files.length) return;
+    const button = form.querySelector("button[type=submit]");
+    button.disabled = true;
+    feedback.className = "feedback";
+    feedback.textContent = `Enviando ${files.files.length} foto(s)…`;
+    try {
+      const result = await api(`/api/admin/boxes/${boxId}/fotos-atracao`, {
+        method: "POST",
+        body: new FormData(form),
+      });
+      files.value = "";
+      feedback.textContent = `${result.quantidade} foto(s) enviada(s).`;
+      await loadAdminAttractionPhotos(boxId);
+    } catch (error) {
+      feedback.className = "feedback error";
+      feedback.textContent = error.message;
+    } finally {
+      button.disabled = false;
+    }
+  });
+  loadAdminAttractionPhotos(boxId).catch((error) => {
+    feedback.className = "feedback error";
+    feedback.textContent = error.message;
+  });
+}
+
 async function renderForm() {
   try {
     const data = creating ? { box:{} } : await api(`/api/admin/boxes/${editMatch[1]}`);
@@ -161,6 +221,7 @@ async function renderForm() {
       renderInvites(data.convites);
       const id=editMatch[1];
       wireOrientedAccess(id);
+      wireAttractionUpload(id);
       document.getElementById("join-adm").disabled=data.participando_adm;
       document.getElementById("leave-adm").disabled=!data.participando_adm;
       document.getElementById("join-adm").onclick=async()=>{await api(`/api/admin/boxes/${id}/participacao`,{method:"POST"});location.reload();};

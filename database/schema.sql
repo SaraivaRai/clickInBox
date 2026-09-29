@@ -18,7 +18,9 @@ CREATE TABLE boxes (
     CHECK (imagem_zoom IS NULL OR imagem_zoom BETWEEN 1 AND 3),
   cor_ambientacao VARCHAR(7)
     CHECK (cor_ambientacao IS NULL OR cor_ambientacao ~ '^#[0-9A-Fa-f]{6}$'),
-  visivel_home BOOLEAN NOT NULL DEFAULT FALSE
+  visivel_home BOOLEAN NOT NULL DEFAULT FALSE,
+  atracao_tipo VARCHAR(30)
+    CHECK (atracao_tipo IS NULL OR atracao_tipo IN ('espelho_magico', 'cabine_fotos'))
 );
 
 CREATE TABLE usuarios (
@@ -148,3 +150,17 @@ CREATE UNIQUE INDEX acessos_orientados_ativo_usuario_box_unique
   WHERE revogado_em IS NULL;
 
 CREATE INDEX acessos_orientados_box_idx ON acessos_orientados (box_id);
+
+CREATE TABLE fotos_atracao (
+  id SERIAL PRIMARY KEY,
+  box_id INTEGER NOT NULL REFERENCES boxes(id) ON DELETE CASCADE,
+  arquivo_original TEXT NOT NULL,
+  arquivo_miniatura TEXT NOT NULL,
+  nome_original VARCHAR(255) NOT NULL,
+  mime_type VARCHAR(100) NOT NULL,
+  tamanho_bytes BIGINT NOT NULL CHECK (tamanho_bytes > 0),
+  criada_em TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX fotos_atracao_box_idx
+  ON fotos_atracao (box_id, criada_em, id);

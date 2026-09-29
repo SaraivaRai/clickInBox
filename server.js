@@ -40,6 +40,15 @@ const adminUpload = multer({
   limits: { fileSize: 30 * 1024 * 1024, files: 3 },
 });
 
+const attractionUpload = multer({
+  dest: "uploads/",
+  limits: { fileSize: 15 * 1024 * 1024, files: 200 },
+  fileFilter: function (req, file, cb) {
+    if (file.mimetype.startsWith("image/")) return cb(null, true);
+    cb(new Error("Apenas imagens são permitidas"));
+  },
+});
+
 async function processarImagem(caminhoOriginal) {
   const caminhoFinal = caminhoOriginal + ".jpg";
 
@@ -445,6 +454,15 @@ app.get(
   autorizarBox,
   function (req, res) {
     res.sendFile(__dirname + "/protagonista.html");
+  },
+);
+
+app.get(
+  "/boxes/:boxId/atracao",
+  autenticarPagina,
+  autorizarBox,
+  function (req, res) {
+    res.sendFile(__dirname + "/atracao.html");
   },
 );
 
@@ -856,6 +874,68 @@ app.post(
       }
     });
   },
+);
+
+app.get(
+  "/api/boxes/:boxId/atracao",
+  autenticarUsuario,
+  autorizarBox,
+  async function (req, res) {
+    try {
+      const [box, fotos] = await Promise.all([
+        pool.query("SELECT atracao_tipo FROM boxes WHERE id = $1", [req.params.boxId]),
+        pool.query(
+          `SELECT id, nome_original, mime_type, tamanho_bytes, criada_em
+           FROM fotos_atracao WHERE box_id = $1
+           ORDER BY criada_em ASC, id ASC`,
+          [req.params.boxId],
+        ),
+      ]);
+      if (!box.rows.length) return res.status(404).json({ erro: "Box não encontrada" });
+      res.json({ atracao_tipo: box.rows[0].atracao_tipo, fotos: fotos.rows });
+    } catch (erro) {
+      console.error(erro);
+      res.status(500).json({ erro: "Não foi possível carregar as fotos da atração" });
+    }
+  },
+);
+
+async function servirFotoAtracao(req, res, original) {
+  try {
+    const resultado = await pool.query(
+      `SELECT arquivo_original, arquivo_miniatura, nome_original
+       FROM fotos_atracao WHERE id = $1 AND box_id = $2`,
+      [req.params.id, req.params.boxId],
+    );
+    if (!resultado.rows.length) return res.status(404).json({ erro: "Foto não encontrada" });
+    const foto = resultado.rows[0];
+    const caminho = caminhoFisicoPublico(
+      original ? foto.arquivo_original : foto.arquivo_miniatura,
+    );
+    if (!caminho || !fs.existsSync(caminho)) {
+      return res.status(404).json({ erro: "Arquivo não encontrado" });
+    }
+    if (original && req.query.download === "1") {
+      return res.download(caminho, path.basename(foto.nome_original));
+    }
+    res.sendFile(caminho);
+  } catch (erro) {
+    console.error(erro);
+    res.status(500).json({ erro: "Não foi possível carregar a foto" });
+  }
+}
+
+app.get(
+  "/api/boxes/:boxId/atracao/:id/miniatura",
+  autenticarUsuario,
+  autorizarBox,
+  (req, res) => servirFotoAtracao(req, res, false),
+);
+app.get(
+  "/api/boxes/:boxId/atracao/:id/original",
+  autenticarUsuario,
+  autorizarBox,
+  (req, res) => servirFotoAtracao(req, res, true),
 );
 
 app.post(
@@ -1592,6 +1672,54 @@ async function prepararArquivosBox(req, boxId) {
   }
 }
 
+async function prepararFotosAtracao(arquivos, boxId) {
+  const tiposPermitidos = {
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp",
+    "image/avif": "avif",
+  };
+  const pasta = path.join(__dirname, "uploads", "boxes", String(boxId), "atracao");
+  fs.mkdirSync(pasta, { recursive: true });
+  const preparados = [];
+  const criados = [];
+  try {
+    const { fileTypeFromFile } = await import("file-type");
+    for (const arquivo of arquivos) {
+      const tipo = await fileTypeFromFile(arquivo.path);
+      const extensao = tiposPermitidos[tipo?.mime];
+      if (!extensao) throw new Error("Use somente imagens JPEG, PNG, WebP ou AVIF");
+      const idArquivo = crypto.randomBytes(16).toString("hex");
+      const nomeOriginal = `${idArquivo}-original.${extensao}`;
+      const nomeMiniatura = `${idArquivo}-miniatura.jpg`;
+      const caminhoOriginal = path.join(pasta, nomeOriginal);
+      const caminhoMiniatura = path.join(pasta, nomeMiniatura);
+      fs.renameSync(arquivo.path, caminhoOriginal);
+      criados.push(caminhoOriginal);
+      await sharp(caminhoOriginal)
+        .rotate()
+        .resize({ width: 640, height: 640, fit: "cover", position: "attention" })
+        .jpeg({ quality: 82, mozjpeg: true })
+        .toFile(caminhoMiniatura);
+      criados.push(caminhoMiniatura);
+      preparados.push({
+        arquivo_original: caminhoPublicoBox(boxId, `atracao/${nomeOriginal}`),
+        arquivo_miniatura: caminhoPublicoBox(boxId, `atracao/${nomeMiniatura}`),
+        nome_original: path.basename(arquivo.originalname).slice(0, 255) || `foto.${extensao}`,
+        mime_type: tipo.mime,
+        tamanho_bytes: arquivo.size,
+      });
+    }
+    return { preparados, criados };
+  } catch (erro) {
+    for (const arquivo of arquivos) {
+      if (arquivo.path && fs.existsSync(arquivo.path)) fs.rmSync(arquivo.path, { force: true });
+    }
+    criados.forEach((arquivo) => fs.rmSync(arquivo, { force: true }));
+    throw erro;
+  }
+}
+
 function lerDadosBox(body) {
   const nome = String(body.nome || "").trim();
   const evento = String(body.evento || "").trim();
@@ -1599,6 +1727,7 @@ function lerDadosBox(body) {
   const apresentacaoTipo = body.apresentacao_tipo === "imagem" ? "imagem" : "texto";
   const cor = String(body.cor_ambientacao || "").trim() || null;
   const visivelHome = body.visivel_home === "on" || body.visivel_home === "true" || body.visivel_home === true;
+  const atracaoTipo = String(body.atracao_tipo || "").trim() || null;
   const semEnquadramento = body.imagem_foco_x === undefined && body.imagem_foco_y === undefined && body.imagem_zoom === undefined;
   const focoX = semEnquadramento ? null : Number(body.imagem_foco_x);
   const focoY = semEnquadramento ? null : Number(body.imagem_foco_y);
@@ -1607,10 +1736,13 @@ function lerDadosBox(body) {
     throw new Error("Nome, evento e data do evento são obrigatórios");
   }
   if (cor && !/^#[0-9a-f]{6}$/i.test(cor)) throw new Error("Cor de ambientação inválida");
+  if (atracaoTipo && !["espelho_magico", "cabine_fotos"].includes(atracaoTipo)) {
+    throw new Error("Tipo de atração inválido");
+  }
   if (!semEnquadramento && !(focoX >= 0 && focoX <= 100 && focoY >= 0 && focoY <= 100 && zoom >= 1 && zoom <= 3)) {
     throw new Error("Enquadramento da foto inválido");
   }
-  return { nome, evento, dataEvento, apresentacaoTipo, cor, focoX, focoY, zoom, visivelHome };
+  return { nome, evento, dataEvento, apresentacaoTipo, cor, focoX, focoY, zoom, visivelHome, atracaoTipo };
 }
 
 app.get("/api/admin/boxes", autenticarUsuario, autorizarAdmin, async (req, res) => {
@@ -1915,9 +2047,9 @@ app.post(
       await client.query("BEGIN");
       const insercao = await client.query(
         `INSERT INTO boxes (nome, evento, data_evento, apresentacao_tipo,
-          imagem_foco_x, imagem_foco_y, imagem_zoom, cor_ambientacao, visivel_home)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id`,
-        [dados.nome, dados.evento, dados.dataEvento, dados.apresentacaoTipo, dados.focoX, dados.focoY, dados.zoom, dados.cor, dados.visivelHome],
+          imagem_foco_x, imagem_foco_y, imagem_zoom, cor_ambientacao, visivel_home, atracao_tipo)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id`,
+        [dados.nome, dados.evento, dados.dataEvento, dados.apresentacaoTipo, dados.focoX, dados.focoY, dados.zoom, dados.cor, dados.visivelHome, dados.atracaoTipo],
       );
       boxId = insercao.rows[0].id;
       const arquivos = await prepararArquivosBox(req, boxId);
@@ -1971,10 +2103,10 @@ app.put(
           imagem_principal=COALESCE($9,imagem_principal),
           imagem_principal_original=COALESCE($10,imagem_principal_original),
           apresentacao_imagem=COALESCE($11,apresentacao_imagem),
-          musica=COALESCE($12,musica), visivel_home=$13
-         WHERE id=$14 RETURNING *`,
+          musica=COALESCE($12,musica), visivel_home=$13, atracao_tipo=$14
+         WHERE id=$15 RETURNING *`,
         [dados.nome,dados.evento,dados.dataEvento,dados.apresentacaoTipo,dados.focoX,dados.focoY,dados.zoom,dados.cor,
-          p.imagem_principal||null,p.imagem_principal_original||null,p.apresentacao_imagem||null,p.musica||null,dados.visivelHome,req.params.id],
+          p.imagem_principal||null,p.imagem_principal_original||null,p.apresentacao_imagem||null,p.musica||null,dados.visivelHome,dados.atracaoTipo,req.params.id],
       );
       const anterior = atual.rows[0];
       if (p.imagem_principal) {
@@ -1993,6 +2125,124 @@ app.put(
       limparUploadsTemporarios(req);
       console.error(erro);
       res.status(400).json({ erro: erro.message || "Não foi possível editar a Box" });
+    }
+  },
+);
+
+app.get(
+  "/api/admin/boxes/:id/fotos-atracao",
+  autenticarUsuario,
+  autorizarAdmin,
+  async (req, res) => {
+    try {
+      const resultado = await pool.query(
+        `SELECT id, nome_original, tamanho_bytes, criada_em
+         FROM fotos_atracao WHERE box_id = $1 ORDER BY criada_em DESC, id DESC`,
+        [req.params.id],
+      );
+      res.json(resultado.rows);
+    } catch (erro) {
+      console.error(erro);
+      res.status(500).json({ erro: "Não foi possível listar as fotos da atração" });
+    }
+  },
+);
+
+app.get(
+  "/api/admin/boxes/:boxId/fotos-atracao/:id/miniatura",
+  autenticarUsuario,
+  autorizarAdmin,
+  async (req, res) => {
+    try {
+      const resultado = await pool.query(
+        "SELECT arquivo_miniatura FROM fotos_atracao WHERE id = $1 AND box_id = $2",
+        [req.params.id, req.params.boxId],
+      );
+      const caminho = resultado.rows[0] && caminhoFisicoPublico(resultado.rows[0].arquivo_miniatura);
+      if (!caminho || !fs.existsSync(caminho)) return res.status(404).end();
+      res.sendFile(caminho);
+    } catch (erro) {
+      console.error(erro);
+      res.status(500).end();
+    }
+  },
+);
+
+app.post(
+  "/api/admin/boxes/:id/fotos-atracao",
+  autenticarUsuario,
+  autorizarAdmin,
+  function (req, res) {
+    attractionUpload.array("fotos", 200)(req, res, async function (erroUpload) {
+      if (erroUpload) {
+        for (const arquivo of req.files || []) fs.rmSync(arquivo.path, { force: true });
+        return res.status(400).json({
+          erro:
+            erroUpload.code === "LIMIT_FILE_SIZE"
+              ? "Cada imagem deve ter no máximo 15 MB"
+              : erroUpload.code === "LIMIT_FILE_COUNT"
+                ? "Envie no máximo 200 fotos por lote"
+                : erroUpload.message,
+        });
+      }
+      if (!req.files?.length) return res.status(400).json({ erro: "Selecione ao menos uma foto" });
+      let preparados;
+      let criados = [];
+      const client = await pool.connect();
+      try {
+        const box = await client.query(
+          "SELECT atracao_tipo FROM boxes WHERE id = $1",
+          [req.params.id],
+        );
+        if (!box.rows.length) throw new Error("Box não encontrada");
+        if (!box.rows[0].atracao_tipo) throw new Error("Configure a atração e salve a Box antes do upload");
+        const arquivos = await prepararFotosAtracao(req.files, req.params.id);
+        preparados = arquivos.preparados;
+        criados = arquivos.criados;
+        await client.query("BEGIN");
+        for (const foto of preparados) {
+          await client.query(
+            `INSERT INTO fotos_atracao
+               (box_id, arquivo_original, arquivo_miniatura, nome_original, mime_type, tamanho_bytes)
+             VALUES ($1, $2, $3, $4, $5, $6)`,
+            [req.params.id, foto.arquivo_original, foto.arquivo_miniatura, foto.nome_original, foto.mime_type, foto.tamanho_bytes],
+          );
+        }
+        await client.query("COMMIT");
+        res.status(201).json({ quantidade: preparados.length });
+      } catch (erro) {
+        await client.query("ROLLBACK").catch(() => {});
+        for (const arquivo of req.files || []) {
+          if (arquivo.path && fs.existsSync(arquivo.path)) fs.rmSync(arquivo.path, { force: true });
+        }
+        criados.forEach((arquivo) => fs.rmSync(arquivo, { force: true }));
+        console.error(erro);
+        res.status(400).json({ erro: erro.message || "Não foi possível enviar as fotos" });
+      } finally {
+        client.release();
+      }
+    });
+  },
+);
+
+app.delete(
+  "/api/admin/boxes/:boxId/fotos-atracao/:id",
+  autenticarUsuario,
+  autorizarAdmin,
+  async (req, res) => {
+    try {
+      const resultado = await pool.query(
+        `DELETE FROM fotos_atracao WHERE id = $1 AND box_id = $2
+         RETURNING arquivo_original, arquivo_miniatura`,
+        [req.params.id, req.params.boxId],
+      );
+      if (!resultado.rows.length) return res.status(404).json({ erro: "Foto não encontrada" });
+      removerArquivoPublico(resultado.rows[0].arquivo_original);
+      removerArquivoPublico(resultado.rows[0].arquivo_miniatura);
+      res.status(204).end();
+    } catch (erro) {
+      console.error(erro);
+      res.status(500).json({ erro: "Não foi possível excluir a foto" });
     }
   },
 );

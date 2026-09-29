@@ -1,0 +1,19 @@
+.attraction-gallery { width:min(100%,920px); margin:0 auto; padding:22px 18px 42px; }
+.attraction-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:18px; }
+.attraction-heading h1 { margin:0; font-family:"Cormorant Garamond",serif; font-size:30px; font-weight:500; color:var(--box-decor-deep); }
+.attraction-heading p,.attraction-state { margin:3px 0 0; color:var(--box-texto-secundario); }
+.attraction-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+.attraction-photo { padding:0; border:0; border-radius:10px; overflow:hidden; background:transparent; cursor:pointer; aspect-ratio:1/1; }
+.attraction-photo img { width:100%; height:100%; display:block; object-fit:cover; }
+.attraction-viewer { width:100%; max-width:none; height:100%; max-height:none; padding:0; border:0; background:rgba(20,14,11,.88); }
+.attraction-viewer::backdrop { background:rgba(20,14,11,.7); }
+.attraction-viewer-panel { position:relative; width:100%; height:100%; display:grid; place-items:center; padding:58px 46px 76px; }
+.attraction-viewer img { max-width:100%; max-height:100%; object-fit:contain; border-radius:8px; }
+.attraction-viewer-close,.attraction-viewer-previous,.attraction-viewer-next { position:absolute; z-index:2; border:0; color:#fff; background:rgba(0,0,0,.35); cursor:pointer; }
+.attraction-viewer-close { top:14px; right:14px; width:40px; height:40px; border-radius:50%; font-size:30px; }
+.attraction-viewer-previous,.attraction-viewer-next { top:50%; width:38px; height:54px; transform:translateY(-50%); border-radius:10px; font-size:36px; }
+.attraction-viewer-previous { left:5px; }.attraction-viewer-next { right:5px; }
+.attraction-download { position:absolute; bottom:20px; left:50%; transform:translateX(-50%); padding:10px 14px; border-radius:9px; background:#fff; color:#80512e; font-weight:700; text-decoration:none; white-space:nowrap; }
+body.attraction-viewer-open { overflow:hidden; }
+.attraction-nav img { width:26px; height:26px; object-fit:contain; }
+@media(min-width:620px){.attraction-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}}
